@@ -11,7 +11,7 @@ using SellerInventer.Infrastructure.Data;
 namespace SellerInventer.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260121012803_InitialCreate")]
+    [Migration("20260121062108_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -153,6 +153,10 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("CostPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -168,12 +172,12 @@ namespace SellerInventer.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("SKU")
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("SellPrice")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("StockQuantity")

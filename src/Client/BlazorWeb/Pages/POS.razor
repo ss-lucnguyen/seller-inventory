@@ -3,98 +3,464 @@
 
 <PageTitle>POS - SellerInventer</PageTitle>
 
-<div class="page-header">
-    <h1 class="page-title">Point of Sale</h1>
-</div>
-
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
-    <div class="card">
-        <h2 style="margin-bottom: 1rem;">Products</h2>
-
-        <div style="margin-bottom: 1rem;">
-            <select class="form-control" @onchange="OnCategoryChanged">
-                <option value="">All Categories</option>
-                @foreach (var category in _categories)
-                {
-                    <option value="@category.Id">@category.Name</option>
-                }
-            </select>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
-            @foreach (var product in _filteredProducts.Where(p => p.IsActive && p.StockQuantity > 0))
-            {
-                <div class="product-card" @onclick="() => AddToCart(product)" style="cursor: pointer; padding: 1rem; border: 1px solid var(--border-color); border-radius: 0.5rem; text-align: center;">
-                    <div style="font-weight: 500;">@product.Name</div>
-                    <div style="color: var(--primary-color); font-weight: 600;">$@product.Price.ToString("N2")</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Stock: @product.StockQuantity</div>
-                </div>
-            }
-        </div>
+<div class="pos-container">
+    <div class="pos-header">
+        <h2>Point of Sale</h2>
     </div>
 
-    <div class="card">
-        <h2 style="margin-bottom: 1rem;">Cart</h2>
+    <div class="pos-content">
+        <div class="products-section">
+            <div class="section-header">
+                <h4>Products</h4>
+                <DxComboBox Data="_categories"
+                            TextFieldName="Name"
+                            ValueFieldName="Id"
+                            Value="_selectedCategoryId"
+                            ValueChanged="@((Guid? value) => OnCategoryChanged(value))"
+                            NullText="All Categories"
+                            ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                            CssClass="category-filter" />
+            </div>
 
-        @if (_cartItems.Any())
-        {
-            <div style="max-height: 300px; overflow-y: auto;">
-                @foreach (var item in _cartItems)
+            <div class="products-grid">
+                @foreach (var product in _filteredProducts.Where(p => p.IsActive && p.StockQuantity > 0))
                 {
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
-                        <div>
-                            <div style="font-weight: 500;">@item.ProductName</div>
-                            <div style="font-size: 0.875rem; color: var(--text-secondary);">$@item.UnitPrice.ToString("N2") x @item.Quantity</div>
+                    <div class="product-card" @onclick="() => AddToCart(product)">
+                        <div class="product-icon">
+                            <span class="oi oi-box"></span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" @onclick="() => UpdateQuantity(item, -1)">-</button>
-                            <span>@item.Quantity</span>
-                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" @onclick="() => UpdateQuantity(item, 1)">+</button>
-                            <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" @onclick="() => RemoveFromCart(item)">X</button>
+                        <div class="product-name">@product.Name</div>
+                        <div class="product-price">@product.SellPrice.ToString("C2")</div>
+                        <div class="product-stock">
+                            <span class="badge @(product.StockQuantity < 10 ? "bg-warning" : "bg-success")">
+                                Stock: @product.StockQuantity
+                            </span>
                         </div>
+                    </div>
+                }
+
+                @if (!_filteredProducts.Any(p => p.IsActive && p.StockQuantity > 0))
+                {
+                    <div class="no-products">
+                        <span class="oi oi-inbox"></span>
+                        <p>No products available</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="cart-section">
+            <div class="cart-header">
+                <h4><span class="oi oi-cart me-2"></span>Shopping Cart</h4>
+                @if (_cartItems.Any())
+                {
+                    <span class="badge bg-primary">@_cartItems.Sum(i => i.Quantity) items</span>
+                }
+            </div>
+
+            <div class="cart-body">
+                @if (_cartItems.Any())
+                {
+                    <div class="cart-items">
+                        @foreach (var item in _cartItems)
+                        {
+                            <div class="cart-item">
+                                <div class="item-info">
+                                    <div class="item-name">@item.ProductName</div>
+                                    <div class="item-price">@item.UnitPrice.ToString("C2")</div>
+                                </div>
+                                <div class="item-controls">
+                                    <div class="quantity-control">
+                                        <button class="qty-btn" @onclick="() => UpdateQuantity(item, -1)">
+                                            <span class="oi oi-minus"></span>
+                                        </button>
+                                        <span class="qty-value">@item.Quantity</span>
+                                        <button class="qty-btn" @onclick="() => UpdateQuantity(item, 1)">
+                                            <span class="oi oi-plus"></span>
+                                        </button>
+                                    </div>
+                                    <div class="item-total">@((item.UnitPrice * item.Quantity).ToString("C2"))</div>
+                                    <button class="remove-btn" @onclick="() => RemoveFromCart(item)">
+                                        <span class="oi oi-trash"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span>@_subtotal.ToString("C2")</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax (10%)</span>
+                            <span>@_tax.ToString("C2")</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span>@_total.ToString("C2")</span>
+                        </div>
+                    </div>
+
+                    <DxButton Text="@(_isProcessing ? "Processing..." : "Complete Order")"
+                              RenderStyle="ButtonRenderStyle.Success"
+                              RenderStyleMode="ButtonRenderStyleMode.Contained"
+                              CssClass="checkout-btn"
+                              Enabled="!_isProcessing"
+                              Click="ProcessOrder" />
+                }
+                else
+                {
+                    <div class="cart-empty">
+                        <span class="oi oi-cart"></span>
+                        <p>Cart is empty</p>
+                        <small>Click on products to add them</small>
                     </div>
                 }
             </div>
 
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Subtotal:</span>
-                    <span>$@_subtotal.ToString("N2")</span>
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="cart-message @(_isSuccess ? "success" : "error")">
+                    <span class="oi @(_isSuccess ? "oi-check" : "oi-warning")"></span>
+                    @_message
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Tax (10%):</span>
-                    <span>$@_tax.ToString("N2")</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 1.25rem;">
-                    <span>Total:</span>
-                    <span>$@_total.ToString("N2")</span>
-                </div>
-            </div>
-
-            <button class="btn btn-success" style="width: 100%; margin-top: 1rem;" @onclick="ProcessOrder" disabled="@_isProcessing">
-                @if (_isProcessing)
-                {
-                    <span>Processing...</span>
-                }
-                else
-                {
-                    <span>Complete Order</span>
-                }
-            </button>
-        }
-        else
-        {
-            <p style="color: var(--text-secondary); text-align: center;">Cart is empty</p>
-        }
-
-        @if (!string.IsNullOrEmpty(_message))
-        {
-            <div class="alert @(_isSuccess ? "alert-success" : "alert-error")" style="margin-top: 1rem;">
-                @_message
-            </div>
-        }
+            }
+        </div>
     </div>
 </div>
+
+<style>
+    .pos-container {
+        height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pos-header {
+        margin-bottom: 1rem;
+    }
+
+    .pos-header h2 {
+        margin: 0;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .pos-content {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 1.5rem;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .products-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #eee;
+        background: #fafafa;
+    }
+
+    .section-header h4 {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .category-filter {
+        width: 200px;
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1rem;
+        padding: 1.5rem;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .product-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 1.25rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #fff;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .product-card:active {
+        transform: scale(0.98);
+    }
+
+    .product-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.9;
+    }
+
+    .product-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .product-price {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .product-stock .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .no-products {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 3rem;
+        color: #999;
+    }
+
+    .no-products .oi {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .cart-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .cart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #eee;
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: #fff;
+    }
+
+    .cart-header h4 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .cart-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .cart-items {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+
+    .cart-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .item-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .item-name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .item-price {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .item-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .quantity-control {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+    }
+
+    .qty-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        transition: all 0.2s;
+    }
+
+    .qty-btn:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+
+    .qty-value {
+        width: 36px;
+        text-align: center;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .item-total {
+        flex: 1;
+        text-align: right;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .remove-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: #fee;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #dc3545;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .remove-btn:hover {
+        background: #dc3545;
+        color: #fff;
+    }
+
+    .cart-summary {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #eee;
+        background: #fafafa;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        color: #666;
+    }
+
+    .summary-row.total {
+        border-top: 2px solid #ddd;
+        margin-top: 0.5rem;
+        padding-top: 1rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .checkout-btn {
+        width: calc(100% - 2rem);
+        margin: 1rem;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+    }
+
+    .cart-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        padding: 2rem;
+    }
+
+    .cart-empty .oi {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .cart-empty p {
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .cart-empty small {
+        margin-top: 0.5rem;
+    }
+
+    .cart-message {
+        margin: 0 1rem 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .cart-message.success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .cart-message.error {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    @@media (max-width: 992px) {
+        .pos-content {
+            grid-template-columns: 1fr;
+        }
+
+        .cart-section {
+            max-height: 400px;
+        }
+    }
+</style>
 
 @code {
     [Inject] private IProductService ProductService { get; set; } = default!;
@@ -120,22 +486,17 @@
         _filteredProducts = _products;
     }
 
-    private void OnCategoryChanged(ChangeEventArgs e)
+    private void OnCategoryChanged(Guid? categoryId)
     {
-        if (Guid.TryParse(e.Value?.ToString(), out var categoryId))
-        {
-            _selectedCategoryId = categoryId;
-            _filteredProducts = _products.Where(p => p.CategoryId == categoryId).ToList();
-        }
-        else
-        {
-            _selectedCategoryId = null;
-            _filteredProducts = _products;
-        }
+        _selectedCategoryId = categoryId;
+        _filteredProducts = categoryId.HasValue
+            ? _products.Where(p => p.CategoryId == categoryId).ToList()
+            : _products;
     }
 
     private void AddToCart(ProductResponse product)
     {
+        _message = null;
         var existingItem = _cartItems.FirstOrDefault(i => i.ProductId == product.Id);
         if (existingItem is not null)
         {
@@ -150,7 +511,7 @@
             {
                 ProductId = product.Id,
                 ProductName = product.Name,
-                UnitPrice = product.Price,
+                UnitPrice = product.SellPrice,
                 Quantity = 1,
                 MaxQuantity = product.StockQuantity
             });
@@ -198,7 +559,7 @@
 
             if (order is not null)
             {
-                _message = $"Order {order.OrderNumber} created successfully!";
+                _message = $"Order {order.OrderNumber} completed!";
                 _isSuccess = true;
                 _cartItems.Clear();
                 CalculateTotals();

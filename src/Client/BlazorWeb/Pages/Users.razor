@@ -1,0 +1,356 @@
+@page "/users"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Users - SellerInventer</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>User Management</h2>
+        <DxButton Text="Add User" IconCssClass="oi oi-plus" RenderStyle="ButtonRenderStyle.Primary" Click="ShowAddModal" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert @(_isSuccess ? "alert-success" : "alert-danger") alert-dismissible mb-3">
+            @_message
+            <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+        </div>
+    }
+
+    <DxGrid Data="_users"
+            ShowFilterRow="true"
+            ShowSearchBox="true"
+            PageSize="10"
+            PagerVisible="true"
+            CssClass="w-100">
+        <Columns>
+            <DxGridDataColumn FieldName="Username" Caption="Username" />
+            <DxGridDataColumn FieldName="Email" Caption="Email" />
+            <DxGridDataColumn FieldName="FullName" Caption="Full Name" />
+            <DxGridDataColumn FieldName="Role" Caption="Role">
+                <CellDisplayTemplate>
+                    @{
+                        var role = (string)context.Value;
+                        <span class="badge @GetRoleBadgeClass(role)">@role</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="IsActive" Caption="Status">
+                <CellDisplayTemplate>
+                    @{
+                        var isActive = (bool)context.Value;
+                        <span class="badge @(isActive ? "bg-success" : "bg-danger")">
+                            @(isActive ? "Active" : "Inactive")
+                        </span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="CreatedAt" Caption="Created" DisplayFormat="d" />
+            <DxGridDataColumn Caption="Actions" Width="280px">
+                <CellDisplayTemplate>
+                    @{
+                        var user = (UserResponse)context.DataItem;
+                        <DxButton Text="Edit" RenderStyle="ButtonRenderStyle.Secondary" SizeMode="SizeMode.Small" Click="() => ShowEditModal(user)" CssClass="me-1" />
+                        <DxButton Text="Reset Pwd" RenderStyle="ButtonRenderStyle.Warning" SizeMode="SizeMode.Small" Click="() => ShowResetPasswordModal(user)" CssClass="me-1" />
+                        <DxButton Text="@(user.IsActive ? "Deactivate" : "Activate")"
+                                  RenderStyle="@(user.IsActive ? ButtonRenderStyle.Danger : ButtonRenderStyle.Success)"
+                                  SizeMode="SizeMode.Small"
+                                  Click="() => ToggleActive(user)" />
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+        </Columns>
+    </DxGrid>
+</div>
+
+<DxPopup @bind-Visible="_showModal"
+         HeaderText="@(_isEditing ? "Edit User" : "Add User")"
+         Width="500px"
+         CloseOnOutsideClick="false"
+         ShowCloseButton="true">
+    <BodyContentTemplate Context="popupContext">
+        <EditForm Model="_formModel" OnValidSubmit="SaveUser" Context="editContext">
+            <DataAnnotationsValidator />
+            <DxFormLayout>
+                @if (!_isEditing)
+                {
+                    <DxFormLayoutItem Caption="Username" ColSpanMd="12">
+                        <DxTextBox @bind-Text="_formModel.Username" />
+                    </DxFormLayoutItem>
+                }
+
+                <DxFormLayoutItem Caption="Email" ColSpanMd="12">
+                    <DxTextBox @bind-Text="_formModel.Email" />
+                </DxFormLayoutItem>
+
+                @if (!_isEditing)
+                {
+                    <DxFormLayoutItem Caption="Password" ColSpanMd="12">
+                        <DxTextBox @bind-Text="_formModel.Password" Password="true" />
+                    </DxFormLayoutItem>
+                }
+
+                <DxFormLayoutItem Caption="Full Name" ColSpanMd="12">
+                    <DxTextBox @bind-Text="_formModel.FullName" />
+                </DxFormLayoutItem>
+
+                <DxFormLayoutItem Caption="Role" ColSpanMd="12">
+                    <DxComboBox Data="_roles"
+                                @bind-Value="_formModel.Role"
+                                NullText="Select Role" />
+                </DxFormLayoutItem>
+
+                @if (_isEditing)
+                {
+                    <DxFormLayoutItem Caption="Active" ColSpanMd="12">
+                        <DxCheckBox @bind-Checked="_formModel.IsActive" />
+                    </DxFormLayoutItem>
+                }
+            </DxFormLayout>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" Click="CloseModal" />
+                <DxButton Text="Save" RenderStyle="ButtonRenderStyle.Primary" SubmitFormOnClick="true" />
+            </div>
+        </EditForm>
+    </BodyContentTemplate>
+</DxPopup>
+
+<DxPopup @bind-Visible="_showResetPasswordModal"
+         HeaderText="Reset Password"
+         Width="400px"
+         CloseOnOutsideClick="false"
+         ShowCloseButton="true">
+    <BodyContentTemplate Context="popupContext">
+        <p class="mb-3">Reset password for <strong>@_selectedUser?.Username</strong></p>
+        <EditForm Model="_resetPasswordModel" OnValidSubmit="ResetPassword" Context="editContext">
+            <DxFormLayout>
+                <DxFormLayoutItem Caption="New Password" ColSpanMd="12">
+                    <DxTextBox @bind-Text="_resetPasswordModel.NewPassword" Password="true" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Confirm Password" ColSpanMd="12">
+                    <DxTextBox @bind-Text="_resetPasswordModel.ConfirmPassword" Password="true" />
+                </DxFormLayoutItem>
+            </DxFormLayout>
+
+            @if (_resetPasswordModel.NewPassword != _resetPasswordModel.ConfirmPassword && !string.IsNullOrEmpty(_resetPasswordModel.ConfirmPassword))
+            {
+                <div class="alert alert-danger mt-2">Passwords do not match</div>
+            }
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" Click="CloseResetPasswordModal" />
+                <DxButton Text="Reset Password" RenderStyle="ButtonRenderStyle.Primary" SubmitFormOnClick="true"
+                          Enabled="@(_resetPasswordModel.NewPassword == _resetPasswordModel.ConfirmPassword && !string.IsNullOrEmpty(_resetPasswordModel.NewPassword))" />
+            </div>
+        </EditForm>
+    </BodyContentTemplate>
+</DxPopup>
+
+@code {
+    [Inject] private IUserService UserService { get; set; } = default!;
+
+    private IReadOnlyList<UserResponse> _users = new List<UserResponse>();
+    private readonly List<string> _roles = new() { "Staff", "Manager", "Admin" };
+    private bool _showModal;
+    private bool _showResetPasswordModal;
+    private bool _isEditing;
+    private Guid? _editingId;
+    private UserResponse? _selectedUser;
+    private UserFormModel _formModel = new();
+    private ResetPasswordModel _resetPasswordModel = new();
+    private string? _message;
+    private bool _isSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _message = null;
+        try
+        {
+            _users = await UserService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error loading users: {ex.Message}";
+            _isSuccess = false;
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        _formModel = new UserFormModel { Role = "Staff" };
+        _isEditing = false;
+        _editingId = null;
+        _showModal = true;
+    }
+
+    private void ShowEditModal(UserResponse user)
+    {
+        _formModel = new UserFormModel
+        {
+            Username = user.Username,
+            Email = user.Email,
+            FullName = user.FullName,
+            Role = user.Role,
+            IsActive = user.IsActive
+        };
+        _isEditing = true;
+        _editingId = user.Id;
+        _showModal = true;
+    }
+
+    private void ShowResetPasswordModal(UserResponse user)
+    {
+        _selectedUser = user;
+        _resetPasswordModel = new ResetPasswordModel();
+        _showResetPasswordModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+    }
+
+    private void CloseResetPasswordModal()
+    {
+        _showResetPasswordModal = false;
+        _selectedUser = null;
+    }
+
+    private async Task SaveUser()
+    {
+        try
+        {
+            if (_isEditing && _editingId.HasValue)
+            {
+                var request = new UpdateUserRequest(
+                    _formModel.Email,
+                    _formModel.FullName,
+                    _formModel.Role,
+                    _formModel.IsActive
+                );
+                var result = await UserService.UpdateAsync(_editingId.Value, request);
+                if (result is not null)
+                {
+                    _message = "User updated successfully";
+                    _isSuccess = true;
+                }
+                else
+                {
+                    _message = "Failed to update user";
+                    _isSuccess = false;
+                }
+            }
+            else
+            {
+                var request = new CreateUserRequest(
+                    _formModel.Username,
+                    _formModel.Email,
+                    _formModel.Password,
+                    _formModel.FullName,
+                    _formModel.Role
+                );
+                var result = await UserService.CreateAsync(request);
+                if (result is not null)
+                {
+                    _message = "User created successfully";
+                    _isSuccess = true;
+                }
+                else
+                {
+                    _message = "Failed to create user";
+                    _isSuccess = false;
+                }
+            }
+
+            _showModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error: {ex.Message}";
+            _isSuccess = false;
+        }
+    }
+
+    private async Task ResetPassword()
+    {
+        if (_selectedUser is null) return;
+
+        try
+        {
+            var request = new ResetPasswordRequest(_resetPasswordModel.NewPassword);
+            var success = await UserService.ResetPasswordAsync(_selectedUser.Id, request);
+
+            if (success)
+            {
+                _message = $"Password reset for {_selectedUser.Username}";
+                _isSuccess = true;
+            }
+            else
+            {
+                _message = "Failed to reset password";
+                _isSuccess = false;
+            }
+
+            _showResetPasswordModal = false;
+            _selectedUser = null;
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error: {ex.Message}";
+            _isSuccess = false;
+        }
+    }
+
+    private async Task ToggleActive(UserResponse user)
+    {
+        try
+        {
+            var success = await UserService.ToggleActiveAsync(user.Id);
+            if (success)
+            {
+                _message = $"User {user.Username} {(user.IsActive ? "deactivated" : "activated")}";
+                _isSuccess = true;
+                await LoadData();
+            }
+            else
+            {
+                _message = "Failed to update user status";
+                _isSuccess = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error: {ex.Message}";
+            _isSuccess = false;
+        }
+    }
+
+    private string GetRoleBadgeClass(string role) => role switch
+    {
+        "Admin" => "bg-danger",
+        "Manager" => "bg-warning text-dark",
+        _ => "bg-info"
+    };
+
+    private class UserFormModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Role { get; set; } = "Staff";
+        public bool IsActive { get; set; } = true;
+    }
+
+    private class ResetPasswordModel
+    {
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

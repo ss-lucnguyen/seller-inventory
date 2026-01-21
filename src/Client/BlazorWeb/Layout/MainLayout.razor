@@ -1,29 +1,55 @@
 @inherits LayoutComponentBase
 
-<div class="app-container">
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <h1>SellerInventer</h1>
+<DxLayoutBreakpoint DeviceSize="DeviceSize.XSmall" @bind-IsActive="_isXSmallScreen" />
+
+<div class="d-flex" style="min-height: 100vh;">
+    <aside class="bg-dark text-white d-flex flex-column" style="width: 250px; @(_isSidebarCollapsed && _isXSmallScreen ? "display: none !important;" : "")">
+        <div class="p-3 border-bottom border-secondary">
+            <h4 class="mb-0 text-center">SellerInventer</h4>
         </div>
         <NavMenu />
         <AuthorizeView>
             <Authorized>
-                <div class="user-info">
-                    <div class="user-name">@context.User.Identity?.Name</div>
-                    <div class="user-role">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
-                    <button class="logout-btn" @onclick="Logout">Logout</button>
+                <div class="mt-auto p-3 border-top border-secondary">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                            <span class="text-white fw-bold">@(context.User.Identity?.Name?[0].ToString().ToUpper())</span>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">@context.User.Identity?.Name</div>
+                            <small class="text-muted">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small>
+                        </div>
+                    </div>
+                    <DxButton Text="Logout" RenderStyle="ButtonRenderStyle.Light" CssClass="w-100" Click="Logout" />
                 </div>
             </Authorized>
         </AuthorizeView>
     </aside>
-    <main class="main-content">
-        @Body
+
+    <main class="flex-grow-1 bg-light">
+        <nav class="navbar navbar-light bg-white shadow-sm px-4 d-flex d-md-none">
+            <button class="btn btn-outline-secondary" @onclick="ToggleSidebar">
+                <span class="oi oi-menu"></span>
+            </button>
+            <span class="navbar-brand mb-0">SellerInventer</span>
+        </nav>
+        <div class="p-4">
+            @Body
+        </div>
     </main>
 </div>
 
 @code {
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private bool _isXSmallScreen;
+    private bool _isSidebarCollapsed = true;
+
+    private void ToggleSidebar()
+    {
+        _isSidebarCollapsed = !_isSidebarCollapsed;
+    }
 
     private async Task Logout()
     {

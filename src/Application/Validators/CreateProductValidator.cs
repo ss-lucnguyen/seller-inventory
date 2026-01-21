@@ -19,8 +19,11 @@ public class CreateProductValidator : AbstractValidator<CreateProductDto>
             .MaximumLength(50).WithMessage("SKU must not exceed 50 characters")
             .When(x => x.SKU is not null);
 
-        RuleFor(x => x.Price)
-            .GreaterThan(0).WithMessage("Price must be greater than zero");
+        RuleFor(x => x.CostPrice)
+            .GreaterThanOrEqualTo(0).WithMessage("Cost price cannot be negative");
+
+        RuleFor(x => x.SellPrice)
+            .GreaterThan(0).WithMessage("Sell price must be greater than zero");
 
         RuleFor(x => x.StockQuantity)
             .GreaterThanOrEqualTo(0).WithMessage("Stock quantity cannot be negative");

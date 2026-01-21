@@ -50,7 +50,8 @@ public class ProductService : IProductService
             Name = dto.Name,
             Description = dto.Description,
             SKU = dto.SKU,
-            Price = dto.Price,
+            CostPrice = dto.CostPrice,
+            SellPrice = dto.SellPrice,
             StockQuantity = dto.StockQuantity,
             CategoryId = dto.CategoryId,
             IsActive = true
@@ -73,7 +74,8 @@ public class ProductService : IProductService
         product.Name = dto.Name;
         product.Description = dto.Description;
         product.SKU = dto.SKU;
-        product.Price = dto.Price;
+        product.CostPrice = dto.CostPrice;
+        product.SellPrice = dto.SellPrice;
         product.StockQuantity = dto.StockQuantity;
         product.CategoryId = dto.CategoryId;
         product.IsActive = dto.IsActive;
@@ -112,7 +114,8 @@ public class ProductService : IProductService
             product.Name,
             product.Description,
             product.SKU,
-            product.Price,
+            product.CostPrice,
+            product.SellPrice,
             product.StockQuantity,
             product.IsActive,
             product.CategoryId,

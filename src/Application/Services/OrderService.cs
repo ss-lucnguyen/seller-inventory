@@ -89,7 +89,7 @@ public class OrderService : IOrderService
                 OrderId = order.Id,
                 ProductId = product.Id,
                 ProductName = product.Name,
-                UnitPrice = product.Price,
+                UnitPrice = product.SellPrice,
                 Quantity = itemDto.Quantity
             };
 
@@ -142,7 +142,7 @@ public class OrderService : IOrderService
             OrderId = orderId,
             ProductId = product.Id,
             ProductName = product.Name,
-            UnitPrice = product.Price,
+            UnitPrice = product.SellPrice,
             Quantity = dto.Quantity
         };
 

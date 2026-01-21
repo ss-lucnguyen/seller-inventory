@@ -4,7 +4,8 @@ public record UpdateProductRequest(
     string Name,
     string? Description,
     string? SKU,
-    decimal Price,
+    decimal CostPrice,
+    decimal SellPrice,
     int StockQuantity,
     Guid CategoryId,
     bool IsActive

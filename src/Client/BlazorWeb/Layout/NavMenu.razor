@@ -1,36 +1,33 @@
-<ul class="nav-menu">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-            Dashboard
-        </NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="pos">
-            POS
-        </NavLink>
-    </li>
+<nav class="nav flex-column p-2">
+    <NavLink class="nav-link text-white py-2 px-3 rounded mb-1" href="" Match="NavLinkMatch.All" ActiveClass="bg-primary">
+        <span class="oi oi-dashboard me-2"></span> Dashboard
+    </NavLink>
+    <NavLink class="nav-link text-white py-2 px-3 rounded mb-1" href="pos" ActiveClass="bg-primary">
+        <span class="oi oi-cart me-2"></span> POS
+    </NavLink>
     <AuthorizeView Roles="Admin">
         <Authorized>
-            <li class="nav-item">
-                <NavLink class="nav-link" href="products">
-                    Products
-                </NavLink>
-            </li>
-            <li class="nav-item">
-                <NavLink class="nav-link" href="categories">
-                    Categories
-                </NavLink>
-            </li>
+            <NavLink class="nav-link text-white py-2 px-3 rounded mb-1" href="products" ActiveClass="bg-primary">
+                <span class="oi oi-box me-2"></span> Products
+            </NavLink>
+            <NavLink class="nav-link text-white py-2 px-3 rounded mb-1" href="categories" ActiveClass="bg-primary">
+                <span class="oi oi-tags me-2"></span> Categories
+            </NavLink>
+            <NavLink class="nav-link text-white py-2 px-3 rounded mb-1" href="users" ActiveClass="bg-primary">
+                <span class="oi oi-people me-2"></span> Users
+            </NavLink>
         </Authorized>
     </AuthorizeView>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="orders">
-            Orders
-        </NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="reports">
-            Reports
-        </NavLink>
-    </li>
-</ul>
+    <NavLink class="nav-link text-white py-2 px-3 rounded mb-1" href="orders" ActiveClass="bg-primary">
+        <span class="oi oi-list me-2"></span> Orders
+    </NavLink>
+    <NavLink class="nav-link text-white py-2 px-3 rounded mb-1" href="reports" ActiveClass="bg-primary">
+        <span class="oi oi-graph me-2"></span> Reports
+    </NavLink>
+</nav>
+
+<style>
+    .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+</style>

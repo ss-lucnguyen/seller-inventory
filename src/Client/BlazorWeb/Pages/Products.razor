@@ -3,118 +3,96 @@
 
 <PageTitle>Products - SellerInventer</PageTitle>
 
-<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
-    <h1 class="page-title">Products</h1>
-    <button class="btn btn-primary" @onclick="ShowAddModal">Add Product</button>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Products</h2>
+        <DxButton Text="Add Product" IconCssClass="oi oi-plus" RenderStyle="ButtonRenderStyle.Primary" Click="ShowAddModal" />
+    </div>
+
+    <DxGrid Data="_products"
+            ShowFilterRow="true"
+            ShowSearchBox="true"
+            PageSize="10"
+            PagerVisible="true"
+            CssClass="w-100">
+        <Columns>
+            <DxGridDataColumn FieldName="Name" Caption="Name" />
+            <DxGridDataColumn FieldName="SKU" Caption="SKU" />
+            <DxGridDataColumn FieldName="CategoryName" Caption="Category" />
+            <DxGridDataColumn FieldName="CostPrice" Caption="Cost Price" DisplayFormat="c2" />
+            <DxGridDataColumn FieldName="SellPrice" Caption="Sell Price" DisplayFormat="c2" />
+            <DxGridDataColumn FieldName="StockQuantity" Caption="Stock" />
+            <DxGridDataColumn FieldName="IsActive" Caption="Status">
+                <CellDisplayTemplate>
+                    @{
+                        var isActive = (bool)context.Value;
+                        <span class="badge @(isActive ? "bg-success" : "bg-danger")">
+                            @(isActive ? "Active" : "Inactive")
+                        </span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn Caption="Actions" Width="200px">
+                <CellDisplayTemplate>
+                    @{
+                        var product = (ProductResponse)context.DataItem;
+                        <DxButton Text="Edit" RenderStyle="ButtonRenderStyle.Secondary" SizeMode="SizeMode.Small" Click="() => ShowEditModal(product)" CssClass="me-1" />
+                        <DxButton Text="Delete" RenderStyle="ButtonRenderStyle.Danger" SizeMode="SizeMode.Small" Click="() => DeleteProduct(product.Id)" />
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+        </Columns>
+    </DxGrid>
 </div>
 
-@if (_isLoading)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <div class="card">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>SKU</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var product in _products)
-                {
-                    <tr>
-                        <td>@product.Name</td>
-                        <td>@product.SKU</td>
-                        <td>@product.CategoryName</td>
-                        <td>$@product.Price.ToString("N2")</td>
-                        <td>@product.StockQuantity</td>
-                        <td>
-                            <span class="badge @(product.IsActive ? "badge-success" : "badge-danger")">
-                                @(product.IsActive ? "Active" : "Inactive")
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-secondary" style="margin-right: 0.5rem;" @onclick="() => ShowEditModal(product)">Edit</button>
-                            <button class="btn btn-danger" @onclick="() => DeleteProduct(product.Id)">Delete</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
-
-@if (_showModal)
-{
-    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-        <div class="card" style="width: 100%; max-width: 500px;">
-            <h2 style="margin-bottom: 1rem;">@(_isEditing ? "Edit Product" : "Add Product")</h2>
-
-            <EditForm Model="_formModel" OnValidSubmit="SaveProduct">
-                <DataAnnotationsValidator />
-
-                <div class="form-group">
-                    <label class="form-label">Name</label>
-                    <InputText class="form-control" @bind-Value="_formModel.Name" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <InputTextArea class="form-control" @bind-Value="_formModel.Description" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">SKU</label>
-                    <InputText class="form-control" @bind-Value="_formModel.SKU" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Category</label>
-                    <InputSelect class="form-control" @bind-Value="_formModel.CategoryId">
-                        <option value="">Select Category</option>
-                        @foreach (var category in _categories)
-                        {
-                            <option value="@category.Id">@category.Name</option>
-                        }
-                    </InputSelect>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Price</label>
-                    <InputNumber class="form-control" @bind-Value="_formModel.Price" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Stock Quantity</label>
-                    <InputNumber class="form-control" @bind-Value="_formModel.StockQuantity" />
-                </div>
-
+<DxPopup @bind-Visible="_showModal"
+         HeaderText="@(_isEditing ? "Edit Product" : "Add Product")"
+         Width="500px"
+         CloseOnOutsideClick="false"
+         ShowCloseButton="true">
+    <BodyContentTemplate Context="popupContext">
+        <EditForm Model="_formModel" OnValidSubmit="SaveProduct" Context="editContext">
+            <DataAnnotationsValidator />
+            <DxFormLayout>
+                <DxFormLayoutItem Caption="Name" ColSpanMd="12">
+                    <DxTextBox @bind-Text="_formModel.Name" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Description" ColSpanMd="12">
+                    <DxMemo @bind-Text="_formModel.Description" Rows="3" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="SKU" ColSpanMd="12">
+                    <DxTextBox @bind-Text="_formModel.SKU" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Category" ColSpanMd="12">
+                    <DxComboBox Data="_categories"
+                                TextFieldName="Name"
+                                ValueFieldName="Id"
+                                @bind-Value="_formModel.CategoryId"
+                                NullText="Select Category" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Cost Price" ColSpanMd="6">
+                    <DxSpinEdit @bind-Value="_formModel.CostPrice" MinValue="0" Increment="0.01m" DisplayFormat="c2" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Sell Price" ColSpanMd="6">
+                    <DxSpinEdit @bind-Value="_formModel.SellPrice" MinValue="0" Increment="0.01m" DisplayFormat="c2" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Stock Quantity" ColSpanMd="12">
+                    <DxSpinEdit @bind-Value="_formModel.StockQuantity" MinValue="0" />
+                </DxFormLayoutItem>
                 @if (_isEditing)
                 {
-                    <div class="form-group">
-                        <label>
-                            <InputCheckbox @bind-Value="_formModel.IsActive" />
-                            Active
-                        </label>
-                    </div>
+                    <DxFormLayoutItem Caption="Active" ColSpanMd="12">
+                        <DxCheckBox @bind-Checked="_formModel.IsActive" />
+                    </DxFormLayoutItem>
                 }
-
-                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
-                </div>
-            </EditForm>
-        </div>
-    </div>
-}
+            </DxFormLayout>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" Click="CloseModal" />
+                <DxButton Text="Save" RenderStyle="ButtonRenderStyle.Primary" SubmitFormOnClick="true" />
+            </div>
+        </EditForm>
+    </BodyContentTemplate>
+</DxPopup>
 
 @code {
     [Inject] private IProductService ProductService { get; set; } = default!;
@@ -122,7 +100,6 @@ else
 
     private IReadOnlyList<ProductResponse> _products = new List<ProductResponse>();
     private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
-    private bool _isLoading = true;
     private bool _showModal;
     private bool _isEditing;
     private Guid? _editingId;
@@ -135,10 +112,8 @@ else
 
     private async Task LoadData()
     {
-        _isLoading = true;
         _products = await ProductService.GetAllAsync();
         _categories = await CategoryService.GetAllAsync();
-        _isLoading = false;
     }
 
     private void ShowAddModal()
@@ -156,7 +131,8 @@ else
             Name = product.Name,
             Description = product.Description,
             SKU = product.SKU,
-            Price = product.Price,
+            CostPrice = product.CostPrice,
+            SellPrice = product.SellPrice,
             StockQuantity = product.StockQuantity,
             CategoryId = product.CategoryId,
             IsActive = product.IsActive
@@ -179,7 +155,8 @@ else
                 _formModel.Name,
                 _formModel.Description,
                 _formModel.SKU,
-                _formModel.Price,
+                _formModel.CostPrice,
+                _formModel.SellPrice,
                 _formModel.StockQuantity,
                 _formModel.CategoryId,
                 _formModel.IsActive
@@ -192,7 +169,8 @@ else
                 _formModel.Name,
                 _formModel.Description,
                 _formModel.SKU,
-                _formModel.Price,
+                _formModel.CostPrice,
+                _formModel.SellPrice,
                 _formModel.StockQuantity,
                 _formModel.CategoryId
             );
@@ -214,7 +192,8 @@ else
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? SKU { get; set; }
-        public decimal Price { get; set; }
+        public decimal CostPrice { get; set; }
+        public decimal SellPrice { get; set; }
         public int StockQuantity { get; set; }
         public Guid CategoryId { get; set; }
         public bool IsActive { get; set; } = true;

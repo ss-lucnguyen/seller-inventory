@@ -1,51 +1,49 @@
 @page "/login"
 @layout LoginLayout
+@using DevExpress.Blazor
 
-<div class="login-container">
-    <div class="login-card">
-        <div class="login-header">
-            <h1>SellerInventer</h1>
-            <p>Sign in to your account</p>
-        </div>
-
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <div class="alert alert-error">@_errorMessage</div>
-        }
-
-        <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
-            <DataAnnotationsValidator />
-
-            <div class="form-group">
-                <label class="form-label" for="username">Username</label>
-                <InputText id="username" class="form-control" @bind-Value="_loginModel.Username" />
-                <ValidationMessage For="() => _loginModel.Username" />
+<div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+    <DxCard CssClass="shadow" style="width: 400px;">
+        <HeaderTemplate>
+            <div class="text-center py-2">
+                <h3 class="mb-0">SellerInventer</h3>
+                <small class="text-muted">Sign in to your account</small>
             </div>
+        </HeaderTemplate>
+        <BodyTemplate>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger mb-3">@_errorMessage</div>
+            }
 
-            <div class="form-group">
-                <label class="form-label" for="password">Password</label>
-                <InputText id="password" type="password" class="form-control" @bind-Value="_loginModel.Password" />
-                <ValidationMessage For="() => _loginModel.Password" />
+            <EditForm Model="_loginModel" OnValidSubmit="HandleLogin" Context="editContext">
+                <DataAnnotationsValidator />
+                <DxFormLayout>
+                    <DxFormLayoutItem Caption="Username" ColSpanMd="12">
+                        <DxTextBox @bind-Text="_loginModel.Username" NullText="Enter username" />
+                    </DxFormLayoutItem>
+                    <DxFormLayoutItem Caption="Password" ColSpanMd="12">
+                        <DxTextBox @bind-Text="_loginModel.Password" Password="true" NullText="Enter password" />
+                    </DxFormLayoutItem>
+                </DxFormLayout>
+
+                <DxButton Text="@(_isLoading ? "Signing in..." : "Sign In")"
+                          RenderStyle="ButtonRenderStyle.Primary"
+                          CssClass="w-100 mt-3"
+                          SubmitFormOnClick="true"
+                          Enabled="!_isLoading" />
+            </EditForm>
+
+            <div class="mt-4 p-3 bg-light rounded text-center">
+                <small class="text-muted">
+                    <strong>Demo credentials:</strong><br />
+                    Admin: admin / Admin@123<br />
+                    Manager: manager / Manager@123<br />
+                    Staff: staff / Staff@123
+                </small>
             </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%" disabled="@_isLoading">
-                @if (_isLoading)
-                {
-                    <span>Signing in...</span>
-                }
-                else
-                {
-                    <span>Sign In</span>
-                }
-            </button>
-        </EditForm>
-
-        <div style="margin-top: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.875rem;">
-            <p>Demo credentials:</p>
-            <p>Admin: admin / Admin@123</p>
-            <p>Staff: staff / Staff@123</p>
-        </div>
-    </div>
+        </BodyTemplate>
+    </DxCard>
 </div>
 
 @code {

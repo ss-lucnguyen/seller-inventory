@@ -28,6 +28,16 @@ public static class DbInitializer
                 IsActive = true
             };
 
+            var managerUser = new User
+            {
+                Username = "manager",
+                Email = "manager@sellerinventer.com",
+                PasswordHash = passwordHasher.Hash("Manager@123"),
+                FullName = "Store Manager",
+                Role = UserRole.Manager,
+                IsActive = true
+            };
+
             var staffUser = new User
             {
                 Username = "staff",
@@ -38,7 +48,7 @@ public static class DbInitializer
                 IsActive = true
             };
 
-            await context.Users.AddRangeAsync(adminUser, staffUser);
+            await context.Users.AddRangeAsync(adminUser, managerUser, staffUser);
         }
 
         if (!await context.Categories.AnyAsync())
@@ -68,7 +78,8 @@ public static class DbInitializer
                     Name = "Wireless Mouse",
                     Description = "Ergonomic wireless mouse",
                     SKU = "ELEC-001",
-                    Price = 29.99m,
+                    CostPrice = 15.00m,
+                    SellPrice = 29.99m,
                     StockQuantity = 100,
                     CategoryId = electronicsCategory.Id
                 },
@@ -77,7 +88,8 @@ public static class DbInitializer
                     Name = "USB-C Hub",
                     Description = "7-in-1 USB-C Hub",
                     SKU = "ELEC-002",
-                    Price = 49.99m,
+                    CostPrice = 25.00m,
+                    SellPrice = 49.99m,
                     StockQuantity = 50,
                     CategoryId = electronicsCategory.Id
                 },
@@ -86,7 +98,8 @@ public static class DbInitializer
                     Name = "T-Shirt",
                     Description = "Cotton T-Shirt",
                     SKU = "CLTH-001",
-                    Price = 19.99m,
+                    CostPrice = 8.00m,
+                    SellPrice = 19.99m,
                     StockQuantity = 200,
                     CategoryId = clothingCategory.Id
                 }

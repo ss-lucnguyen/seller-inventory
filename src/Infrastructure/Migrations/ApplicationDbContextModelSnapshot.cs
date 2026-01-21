@@ -150,6 +150,10 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("CostPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -165,12 +169,12 @@ namespace SellerInventer.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("SKU")
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("SellPrice")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("StockQuantity")

@@ -43,7 +43,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.SKU).HasMaxLength(50);
-            entity.Property(e => e.Price).HasPrecision(18, 2);
+            entity.Property(e => e.CostPrice).HasPrecision(18, 2);
+            entity.Property(e => e.SellPrice).HasPrecision(18, 2);
 
             entity.HasOne(e => e.Category)
                 .WithMany(c => c.Products)
