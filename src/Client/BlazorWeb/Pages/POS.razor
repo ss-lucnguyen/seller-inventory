@@ -1,0 +1,235 @@
+@page "/pos"
+@attribute [Authorize]
+
+<PageTitle>POS - SellerInventer</PageTitle>
+
+<div class="page-header">
+    <h1 class="page-title">Point of Sale</h1>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <h2 style="margin-bottom: 1rem;">Products</h2>
+
+        <div style="margin-bottom: 1rem;">
+            <select class="form-control" @onchange="OnCategoryChanged">
+                <option value="">All Categories</option>
+                @foreach (var category in _categories)
+                {
+                    <option value="@category.Id">@category.Name</option>
+                }
+            </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+            @foreach (var product in _filteredProducts.Where(p => p.IsActive && p.StockQuantity > 0))
+            {
+                <div class="product-card" @onclick="() => AddToCart(product)" style="cursor: pointer; padding: 1rem; border: 1px solid var(--border-color); border-radius: 0.5rem; text-align: center;">
+                    <div style="font-weight: 500;">@product.Name</div>
+                    <div style="color: var(--primary-color); font-weight: 600;">$@product.Price.ToString("N2")</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Stock: @product.StockQuantity</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom: 1rem;">Cart</h2>
+
+        @if (_cartItems.Any())
+        {
+            <div style="max-height: 300px; overflow-y: auto;">
+                @foreach (var item in _cartItems)
+                {
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div>
+                            <div style="font-weight: 500;">@item.ProductName</div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary);">$@item.UnitPrice.ToString("N2") x @item.Quantity</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" @onclick="() => UpdateQuantity(item, -1)">-</button>
+                            <span>@item.Quantity</span>
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" @onclick="() => UpdateQuantity(item, 1)">+</button>
+                            <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" @onclick="() => RemoveFromCart(item)">X</button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Subtotal:</span>
+                    <span>$@_subtotal.ToString("N2")</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Tax (10%):</span>
+                    <span>$@_tax.ToString("N2")</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 1.25rem;">
+                    <span>Total:</span>
+                    <span>$@_total.ToString("N2")</span>
+                </div>
+            </div>
+
+            <button class="btn btn-success" style="width: 100%; margin-top: 1rem;" @onclick="ProcessOrder" disabled="@_isProcessing">
+                @if (_isProcessing)
+                {
+                    <span>Processing...</span>
+                }
+                else
+                {
+                    <span>Complete Order</span>
+                }
+            </button>
+        }
+        else
+        {
+            <p style="color: var(--text-secondary); text-align: center;">Cart is empty</p>
+        }
+
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert @(_isSuccess ? "alert-success" : "alert-error")" style="margin-top: 1rem;">
+                @_message
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Inject] private IProductService ProductService { get; set; } = default!;
+    [Inject] private ICategoryService CategoryService { get; set; } = default!;
+    [Inject] private IOrderService OrderService { get; set; } = default!;
+
+    private IReadOnlyList<ProductResponse> _products = new List<ProductResponse>();
+    private IReadOnlyList<ProductResponse> _filteredProducts = new List<ProductResponse>();
+    private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
+    private List<CartItem> _cartItems = new();
+    private Guid? _selectedCategoryId;
+    private decimal _subtotal;
+    private decimal _tax;
+    private decimal _total;
+    private bool _isProcessing;
+    private string? _message;
+    private bool _isSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _products = await ProductService.GetAllAsync();
+        _categories = await CategoryService.GetAllAsync();
+        _filteredProducts = _products;
+    }
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var categoryId))
+        {
+            _selectedCategoryId = categoryId;
+            _filteredProducts = _products.Where(p => p.CategoryId == categoryId).ToList();
+        }
+        else
+        {
+            _selectedCategoryId = null;
+            _filteredProducts = _products;
+        }
+    }
+
+    private void AddToCart(ProductResponse product)
+    {
+        var existingItem = _cartItems.FirstOrDefault(i => i.ProductId == product.Id);
+        if (existingItem is not null)
+        {
+            if (existingItem.Quantity < product.StockQuantity)
+            {
+                existingItem.Quantity++;
+            }
+        }
+        else
+        {
+            _cartItems.Add(new CartItem
+            {
+                ProductId = product.Id,
+                ProductName = product.Name,
+                UnitPrice = product.Price,
+                Quantity = 1,
+                MaxQuantity = product.StockQuantity
+            });
+        }
+        CalculateTotals();
+    }
+
+    private void UpdateQuantity(CartItem item, int change)
+    {
+        item.Quantity += change;
+        if (item.Quantity <= 0)
+        {
+            _cartItems.Remove(item);
+        }
+        else if (item.Quantity > item.MaxQuantity)
+        {
+            item.Quantity = item.MaxQuantity;
+        }
+        CalculateTotals();
+    }
+
+    private void RemoveFromCart(CartItem item)
+    {
+        _cartItems.Remove(item);
+        CalculateTotals();
+    }
+
+    private void CalculateTotals()
+    {
+        _subtotal = _cartItems.Sum(i => i.UnitPrice * i.Quantity);
+        _tax = _subtotal * 0.10m;
+        _total = _subtotal + _tax;
+    }
+
+    private async Task ProcessOrder()
+    {
+        _isProcessing = true;
+        _message = null;
+
+        try
+        {
+            var items = _cartItems.Select(i => new CreateOrderItemRequest(i.ProductId, i.Quantity)).ToList();
+            var request = new CreateOrderRequest(items, _tax, 0, null);
+            var order = await OrderService.CreateAsync(request);
+
+            if (order is not null)
+            {
+                _message = $"Order {order.OrderNumber} created successfully!";
+                _isSuccess = true;
+                _cartItems.Clear();
+                CalculateTotals();
+                _products = await ProductService.GetAllAsync();
+                _filteredProducts = _selectedCategoryId.HasValue
+                    ? _products.Where(p => p.CategoryId == _selectedCategoryId).ToList()
+                    : _products;
+            }
+            else
+            {
+                _message = "Failed to create order";
+                _isSuccess = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error: {ex.Message}";
+            _isSuccess = false;
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private class CartItem
+    {
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public decimal UnitPrice { get; set; }
+        public int Quantity { get; set; }
+        public int MaxQuantity { get; set; }
+    }
+}

@@ -1,0 +1,99 @@
+@page "/orders"
+@attribute [Authorize]
+
+<PageTitle>Orders - SellerInventer</PageTitle>
+
+<div class="page-header">
+    <h1 class="page-title">Orders</h1>
+</div>
+
+@if (_isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Order Number</th>
+                    <th>Date</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <AuthorizeView Roles="Admin">
+                        <th>Actions</th>
+                    </AuthorizeView>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in _orders)
+                {
+                    <tr>
+                        <td>@order.OrderNumber</td>
+                        <td>@order.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@order.Items.Count items</td>
+                        <td>$@order.Total.ToString("N2")</td>
+                        <td>
+                            <span class="badge @GetStatusBadgeClass(order.Status)">
+                                @order.Status
+                            </span>
+                        </td>
+                        <AuthorizeView Roles="Admin">
+                            <td>
+                                <select class="form-control" style="width: auto; display: inline-block;"
+                                        @onchange="e => UpdateStatus(order.Id, e.Value?.ToString())">
+                                    <option value="Pending" selected="@(order.Status == "Pending")">Pending</option>
+                                    <option value="Confirmed" selected="@(order.Status == "Confirmed")">Confirmed</option>
+                                    <option value="Completed" selected="@(order.Status == "Completed")">Completed</option>
+                                    <option value="Cancelled" selected="@(order.Status == "Cancelled")">Cancelled</option>
+                                </select>
+                            </td>
+                        </AuthorizeView>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Inject] private IOrderService OrderService { get; set; } = default!;
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private IReadOnlyList<OrderResponse> _orders = new List<OrderResponse>();
+    private bool _isLoading = true;
+    private bool _isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        _isAdmin = state.User.IsInRole("Admin");
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        _orders = _isAdmin
+            ? await OrderService.GetAllAsync()
+            : await OrderService.GetMyOrdersAsync();
+        _isLoading = false;
+    }
+
+    private async Task UpdateStatus(Guid orderId, string? status)
+    {
+        if (string.IsNullOrEmpty(status)) return;
+        await OrderService.UpdateStatusAsync(orderId, new UpdateOrderStatusRequest(status));
+        await LoadData();
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Completed" => "badge-success",
+        "Cancelled" => "badge-danger",
+        "Confirmed" => "badge-warning",
+        _ => "badge-warning"
+    };
+}

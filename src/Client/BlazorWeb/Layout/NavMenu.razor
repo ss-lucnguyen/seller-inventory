@@ -1,0 +1,36 @@
+<ul class="nav-menu">
+    <li class="nav-item">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            Dashboard
+        </NavLink>
+    </li>
+    <li class="nav-item">
+        <NavLink class="nav-link" href="pos">
+            POS
+        </NavLink>
+    </li>
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <li class="nav-item">
+                <NavLink class="nav-link" href="products">
+                    Products
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link" href="categories">
+                    Categories
+                </NavLink>
+            </li>
+        </Authorized>
+    </AuthorizeView>
+    <li class="nav-item">
+        <NavLink class="nav-link" href="orders">
+            Orders
+        </NavLink>
+    </li>
+    <li class="nav-item">
+        <NavLink class="nav-link" href="reports">
+            Reports
+        </NavLink>
+    </li>
+</ul>

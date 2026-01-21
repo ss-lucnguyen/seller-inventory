@@ -1,0 +1,222 @@
+@page "/products"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Products - SellerInventer</PageTitle>
+
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h1 class="page-title">Products</h1>
+    <button class="btn btn-primary" @onclick="ShowAddModal">Add Product</button>
+</div>
+
+@if (_isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var product in _products)
+                {
+                    <tr>
+                        <td>@product.Name</td>
+                        <td>@product.SKU</td>
+                        <td>@product.CategoryName</td>
+                        <td>$@product.Price.ToString("N2")</td>
+                        <td>@product.StockQuantity</td>
+                        <td>
+                            <span class="badge @(product.IsActive ? "badge-success" : "badge-danger")">
+                                @(product.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-secondary" style="margin-right: 0.5rem;" @onclick="() => ShowEditModal(product)">Edit</button>
+                            <button class="btn btn-danger" @onclick="() => DeleteProduct(product.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (_showModal)
+{
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="card" style="width: 100%; max-width: 500px;">
+            <h2 style="margin-bottom: 1rem;">@(_isEditing ? "Edit Product" : "Add Product")</h2>
+
+            <EditForm Model="_formModel" OnValidSubmit="SaveProduct">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control" @bind-Value="_formModel.Name" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <InputTextArea class="form-control" @bind-Value="_formModel.Description" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">SKU</label>
+                    <InputText class="form-control" @bind-Value="_formModel.SKU" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <InputSelect class="form-control" @bind-Value="_formModel.CategoryId">
+                        <option value="">Select Category</option>
+                        @foreach (var category in _categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Price</label>
+                    <InputNumber class="form-control" @bind-Value="_formModel.Price" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Stock Quantity</label>
+                    <InputNumber class="form-control" @bind-Value="_formModel.StockQuantity" />
+                </div>
+
+                @if (_isEditing)
+                {
+                    <div class="form-group">
+                        <label>
+                            <InputCheckbox @bind-Value="_formModel.IsActive" />
+                            Active
+                        </label>
+                    </div>
+                }
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private IProductService ProductService { get; set; } = default!;
+    [Inject] private ICategoryService CategoryService { get; set; } = default!;
+
+    private IReadOnlyList<ProductResponse> _products = new List<ProductResponse>();
+    private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
+    private bool _isLoading = true;
+    private bool _showModal;
+    private bool _isEditing;
+    private Guid? _editingId;
+    private ProductFormModel _formModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        _products = await ProductService.GetAllAsync();
+        _categories = await CategoryService.GetAllAsync();
+        _isLoading = false;
+    }
+
+    private void ShowAddModal()
+    {
+        _formModel = new ProductFormModel();
+        _isEditing = false;
+        _editingId = null;
+        _showModal = true;
+    }
+
+    private void ShowEditModal(ProductResponse product)
+    {
+        _formModel = new ProductFormModel
+        {
+            Name = product.Name,
+            Description = product.Description,
+            SKU = product.SKU,
+            Price = product.Price,
+            StockQuantity = product.StockQuantity,
+            CategoryId = product.CategoryId,
+            IsActive = product.IsActive
+        };
+        _isEditing = true;
+        _editingId = product.Id;
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+    }
+
+    private async Task SaveProduct()
+    {
+        if (_isEditing && _editingId.HasValue)
+        {
+            var request = new UpdateProductRequest(
+                _formModel.Name,
+                _formModel.Description,
+                _formModel.SKU,
+                _formModel.Price,
+                _formModel.StockQuantity,
+                _formModel.CategoryId,
+                _formModel.IsActive
+            );
+            await ProductService.UpdateAsync(_editingId.Value, request);
+        }
+        else
+        {
+            var request = new CreateProductRequest(
+                _formModel.Name,
+                _formModel.Description,
+                _formModel.SKU,
+                _formModel.Price,
+                _formModel.StockQuantity,
+                _formModel.CategoryId
+            );
+            await ProductService.CreateAsync(request);
+        }
+
+        _showModal = false;
+        await LoadData();
+    }
+
+    private async Task DeleteProduct(Guid id)
+    {
+        await ProductService.DeleteAsync(id);
+        await LoadData();
+    }
+
+    private class ProductFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? SKU { get; set; }
+        public decimal Price { get; set; }
+        public int StockQuantity { get; set; }
+        public Guid CategoryId { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}

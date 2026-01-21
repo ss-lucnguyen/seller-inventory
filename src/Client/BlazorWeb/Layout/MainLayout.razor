@@ -1,0 +1,33 @@
+@inherits LayoutComponentBase
+
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>SellerInventer</h1>
+        </div>
+        <NavMenu />
+        <AuthorizeView>
+            <Authorized>
+                <div class="user-info">
+                    <div class="user-name">@context.User.Identity?.Name</div>
+                    <div class="user-role">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
+                    <button class="logout-btn" @onclick="Logout">Logout</button>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </aside>
+    <main class="main-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    [Inject] private IAuthService AuthService { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", true);
+    }
+}

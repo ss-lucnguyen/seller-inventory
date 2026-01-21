@@ -1,0 +1,164 @@
+@page "/categories"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Categories - SellerInventer</PageTitle>
+
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h1 class="page-title">Categories</h1>
+    <button class="btn btn-primary" @onclick="ShowAddModal">Add Category</button>
+</div>
+
+@if (_isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in _categories)
+                {
+                    <tr>
+                        <td>@category.Name</td>
+                        <td>@category.Description</td>
+                        <td>
+                            <span class="badge @(category.IsActive ? "badge-success" : "badge-danger")">
+                                @(category.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-secondary" style="margin-right: 0.5rem;" @onclick="() => ShowEditModal(category)">Edit</button>
+                            <button class="btn btn-danger" @onclick="() => DeleteCategory(category.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (_showModal)
+{
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="card" style="width: 100%; max-width: 400px;">
+            <h2 style="margin-bottom: 1rem;">@(_isEditing ? "Edit Category" : "Add Category")</h2>
+
+            <EditForm Model="_formModel" OnValidSubmit="SaveCategory">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control" @bind-Value="_formModel.Name" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <InputTextArea class="form-control" @bind-Value="_formModel.Description" />
+                </div>
+
+                @if (_isEditing)
+                {
+                    <div class="form-group">
+                        <label>
+                            <InputCheckbox @bind-Value="_formModel.IsActive" />
+                            Active
+                        </label>
+                    </div>
+                }
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private ICategoryService CategoryService { get; set; } = default!;
+
+    private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
+    private bool _isLoading = true;
+    private bool _showModal;
+    private bool _isEditing;
+    private Guid? _editingId;
+    private CategoryFormModel _formModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        _categories = await CategoryService.GetAllAsync();
+        _isLoading = false;
+    }
+
+    private void ShowAddModal()
+    {
+        _formModel = new CategoryFormModel();
+        _isEditing = false;
+        _editingId = null;
+        _showModal = true;
+    }
+
+    private void ShowEditModal(CategoryResponse category)
+    {
+        _formModel = new CategoryFormModel
+        {
+            Name = category.Name,
+            Description = category.Description,
+            IsActive = category.IsActive
+        };
+        _isEditing = true;
+        _editingId = category.Id;
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+    }
+
+    private async Task SaveCategory()
+    {
+        if (_isEditing && _editingId.HasValue)
+        {
+            var request = new UpdateCategoryRequest(_formModel.Name, _formModel.Description, _formModel.IsActive);
+            await CategoryService.UpdateAsync(_editingId.Value, request);
+        }
+        else
+        {
+            var request = new CreateCategoryRequest(_formModel.Name, _formModel.Description);
+            await CategoryService.CreateAsync(request);
+        }
+
+        _showModal = false;
+        await LoadData();
+    }
+
+    private async Task DeleteCategory(Guid id)
+    {
+        await CategoryService.DeleteAsync(id);
+        await LoadData();
+    }
+
+    private class CategoryFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}

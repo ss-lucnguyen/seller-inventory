@@ -1,0 +1,120 @@
+@page "/reports"
+@attribute [Authorize]
+
+<PageTitle>Reports - SellerInventer</PageTitle>
+
+<div class="page-header">
+    <h1 class="page-title">Reports</h1>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="margin-bottom: 1rem;">Date Range</h2>
+    <div style="display: flex; gap: 1rem; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" @bind="_startDate" />
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" @bind="_endDate" />
+        </div>
+        <button class="btn btn-primary" @onclick="LoadSummary">Generate Report</button>
+    </div>
+</div>
+
+@if (_summary is not null)
+{
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value">@_summary.TotalOrders</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">$@_summary.TotalRevenue.ToString("N2")</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Average Order Value</div>
+            <div class="stat-value">$@_summary.AverageOrderValue.ToString("N2")</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Products Sold</div>
+            <div class="stat-value">@_summary.TotalProductsSold</div>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <h2 style="margin-bottom: 1rem;">Daily Sales</h2>
+    <div class="form-group">
+        <label class="form-label">Select Date</label>
+        <input type="date" class="form-control" style="width: auto;" @bind="_selectedDate" @bind:after="LoadDailyReport" />
+    </div>
+
+    @if (_dailyReport is not null)
+    {
+        <div class="stats-grid" style="margin-top: 1rem;">
+            <div class="stat-card">
+                <div class="stat-label">Orders</div>
+                <div class="stat-value">@_dailyReport.TotalOrders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Revenue</div>
+                <div class="stat-value">$@_dailyReport.TotalRevenue.ToString("N2")</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Order</div>
+                <div class="stat-value">$@_dailyReport.AverageOrderValue.ToString("N2")</div>
+            </div>
+        </div>
+
+        @if (_dailyReport.TopSellingProducts.Any())
+        {
+            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Top Selling Products</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity Sold</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in _dailyReport.TopSellingProducts)
+                    {
+                        <tr>
+                            <td>@product.ProductName</td>
+                            <td>@product.QuantitySold</td>
+                            <td>$@product.Revenue.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@code {
+    [Inject] private IReportService ReportService { get; set; } = default!;
+
+    private DateTime _startDate = DateTime.Today.AddDays(-30);
+    private DateTime _endDate = DateTime.Today;
+    private DateTime _selectedDate = DateTime.Today;
+    private SalesSummary? _summary;
+    private DailySalesReport? _dailyReport;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDailyReport();
+    }
+
+    private async Task LoadSummary()
+    {
+        _summary = await ReportService.GetSalesSummaryAsync(_startDate, _endDate);
+    }
+
+    private async Task LoadDailyReport()
+    {
+        _dailyReport = await ReportService.GetDailySalesAsync(_selectedDate);
+    }
+}
