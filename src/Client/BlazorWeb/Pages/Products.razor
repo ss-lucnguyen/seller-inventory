@@ -1,124 +1,250 @@
 @page "/products"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,Manager")]
+@implements IDisposable
 
-<PageTitle>Products - SellerInventer</PageTitle>
+<PageTitle>@L["Products"] - SellerInventer</PageTitle>
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Products</h2>
-        <DxButton Text="Add Product" IconCssClass="oi oi-plus" RenderStyle="ButtonRenderStyle.Primary" Click="ShowAddModal" />
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">@L["Products"]</MudText>
+        <MudStack Row Spacing="2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="ShowAddModal">@L["AddProduct"]</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.FileUpload"
+                       OnClick="ShowImportModal">@L["ImportExcel"]</MudButton>
+        </MudStack>
     </div>
 
-    <DxGrid Data="_products"
-            ShowFilterRow="true"
-            ShowSearchBox="true"
-            PageSize="10"
-            PagerVisible="true"
-            CssClass="w-100">
-        <Columns>
-            <DxGridDataColumn FieldName="Name" Caption="Name" />
-            <DxGridDataColumn FieldName="SKU" Caption="SKU" />
-            <DxGridDataColumn FieldName="CategoryName" Caption="Category" />
-            <DxGridDataColumn FieldName="CostPrice" Caption="Cost Price" DisplayFormat="c2" />
-            <DxGridDataColumn FieldName="SellPrice" Caption="Sell Price" DisplayFormat="c2" />
-            <DxGridDataColumn FieldName="StockQuantity" Caption="Stock" />
-            <DxGridDataColumn FieldName="IsActive" Caption="Status">
-                <CellDisplayTemplate>
-                    @{
-                        var isActive = (bool)context.Value;
-                        <span class="badge @(isActive ? "bg-success" : "bg-danger")">
-                            @(isActive ? "Active" : "Inactive")
-                        </span>
-                    }
-                </CellDisplayTemplate>
-            </DxGridDataColumn>
-            <DxGridDataColumn Caption="Actions" Width="200px">
-                <CellDisplayTemplate>
-                    @{
-                        var product = (ProductResponse)context.DataItem;
-                        <DxButton Text="Edit" RenderStyle="ButtonRenderStyle.Secondary" SizeMode="SizeMode.Small" Click="() => ShowEditModal(product)" CssClass="me-1" />
-                        <DxButton Text="Delete" RenderStyle="ButtonRenderStyle.Danger" SizeMode="SizeMode.Small" Click="() => DeleteProduct(product.Id)" />
-                    }
-                </CellDisplayTemplate>
-            </DxGridDataColumn>
-        </Columns>
-    </DxGrid>
-</div>
+    @if (_products == null)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Class="mt-4" />
+    }
+    else
+    {
+        <MudDataGrid Items="_products" Hover="true" Dense="true" Virtualize="true" Class="mt-4">
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="@L["ProductName"]" />
+                <PropertyColumn Property="x => x.SKU" Title="@L["SKU"]" />
+                <PropertyColumn Property="x => x.CategoryName" Title="@L["Category"]" />
+                <TemplateColumn Title="@L["Cost"]">
+                    <CellTemplate>
+                        @Lang.FormatCurrency(context.Item.CostPrice)
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="@L["Price"]">
+                    <CellTemplate>
+                        @Lang.FormatCurrency(context.Item.SellPrice)
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.StockQuantity" Title="@L["Stock"]" />
+                <TemplateColumn Title="@L["Status"]">
+                    <CellTemplate>
+                        <MudChip T="string" Color="@(context.Item.IsActive ? Color.Success : Color.Error)">
+                            @(context.Item.IsActive ? L["IsActive"] : L["Inactive"])
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="@L["Actions"]">
+                    <CellTemplate>
+                        <MudStack Row Spacing="1">
+                            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary"
+                                OnClick="() => ShowEditModal(context.Item)">@L["Edit"]</MudButton>
+                            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Error"
+                                OnClick="() => DeleteProduct(context.Item.Id)">@L["Delete"]</MudButton>
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="ProductResponse" />
+            </PagerContent>
+        </MudDataGrid>
+    }
 
-<DxPopup @bind-Visible="_showModal"
-         HeaderText="@(_isEditing ? "Edit Product" : "Add Product")"
-         Width="500px"
-         CloseOnOutsideClick="false"
-         ShowCloseButton="true">
-    <BodyContentTemplate Context="popupContext">
-        <EditForm Model="_formModel" OnValidSubmit="SaveProduct" Context="editContext">
-            <DataAnnotationsValidator />
-            <DxFormLayout>
-                <DxFormLayoutItem Caption="Name" ColSpanMd="12">
-                    <DxTextBox @bind-Text="_formModel.Name" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Description" ColSpanMd="12">
-                    <DxMemo @bind-Text="_formModel.Description" Rows="3" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="SKU" ColSpanMd="12">
-                    <DxTextBox @bind-Text="_formModel.SKU" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Category" ColSpanMd="12">
-                    <DxComboBox Data="_categories"
-                                TextFieldName="Name"
-                                ValueFieldName="Id"
-                                @bind-Value="_formModel.CategoryId"
-                                NullText="Select Category" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Cost Price" ColSpanMd="6">
-                    <DxSpinEdit @bind-Value="_formModel.CostPrice" MinValue="0" Increment="0.01m" DisplayFormat="c2" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Sell Price" ColSpanMd="6">
-                    <DxSpinEdit @bind-Value="_formModel.SellPrice" MinValue="0" Increment="0.01m" DisplayFormat="c2" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Stock Quantity" ColSpanMd="12">
-                    <DxSpinEdit @bind-Value="_formModel.StockQuantity" MinValue="0" />
-                </DxFormLayoutItem>
+    <!-- Add/Edit Product Dialog -->
+    <MudDialog @bind-Visible="_showModal" Options="_dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">@(_isEditing ? L["Edit"] + " " + L["Product"] : L["AddProduct"])</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudStack Spacing="2">
+                <MudTextField @bind-Value="_formModel.Name" Label="@L["ProductName"]" Required="true" />
+                <MudTextField @bind-Value="_formModel.Description" Label="@L["Description"]" Lines="3" />
+                <MudTextField @bind-Value="_formModel.SKU" Label="@L["SKU"]" />
+
+                <MudAutocomplete T="CategoryResponse" Value="_selectedCategory" ValueChanged="OnCategoryChanged"
+                    SearchFunc="SearchCategories" Label="@L["Category"]" ToStringFunc="@(c => c?.Name ?? string.Empty)"
+                    CoerceText="true" CoerceValue="false" />
+
+                <MudNumericField @bind-Value="_formModel.CostPrice" Label="@L["CostPrice"]" />
+                <MudNumericField @bind-Value="_formModel.SellPrice" Label="@L["SellPrice"]" />
+                <MudNumericField @bind-Value="_formModel.StockQuantity" Label="@L["StockQuantity"]" />
+
                 @if (_isEditing)
                 {
-                    <DxFormLayoutItem Caption="Active" ColSpanMd="12">
-                        <DxCheckBox @bind-Checked="_formModel.IsActive" />
-                    </DxFormLayoutItem>
+                    <MudCheckBox T="bool" @bind-Value="_formModel.IsActive" Label="@L["IsActive"]" />
                 }
-            </DxFormLayout>
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" Click="CloseModal" />
-                <DxButton Text="Save" RenderStyle="ButtonRenderStyle.Primary" SubmitFormOnClick="true" />
-            </div>
-        </EditForm>
-    </BodyContentTemplate>
-</DxPopup>
+
+                <!-- Image Upload Section -->
+                <MudPaper Class="pa-4 my-4" Outlined="true">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">@L["Image"]</MudText>
+                    @if (!string.IsNullOrEmpty(_formModel.ImageUrl))
+                    {
+                        <MudStack Spacing="2">
+                            <img src="@_formModel.ImageUrl" alt="Product Image"
+                                style="max-width: 200px; max-height: 200px;" />
+                            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Error"
+                                OnClick="() => _formModel.ImageUrl = null">@L["Delete"]</MudButton>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudFileUpload T="IBrowserFile" FilesChanged="HandleImageUpload" Accept=".jpg,.jpeg,.png,.webp">
+                            <ActivatorContent>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                    StartIcon="@Icons.Material.Filled.CloudUpload">
+                                    @L["UploadImage"]
+                                </MudButton>
+                            </ActivatorContent>
+                        </MudFileUpload>
+                    }
+                    @if (!string.IsNullOrEmpty(_imageUploadError))
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mt-2">@_imageUploadError</MudAlert>
+                    }
+                </MudPaper>
+            </MudStack>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="CloseModal" Color="Color.Default">@L["Cancel"]</MudButton>
+            <MudButton OnClick="SaveProduct" Variant="Variant.Filled" Color="Color.Primary">@L["Save"]</MudButton>
+        </DialogActions>
+    </MudDialog>
+
+    <!-- Import Excel Dialog -->
+    <MudDialog @bind-Visible="_showImportModal" Options="_importDialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">@L["ImportProducts"]</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.body2">
+                    @L["SelectFile"]: No, ProductName, Category, SKU, SellPrice, CostPrice, InStock
+                </MudText>
+
+                @if (_isImporting)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+                    <MudText Typo="Typo.body2" Align="Align.Center">@L["Uploading"]</MudText>
+                }
+                else
+                {
+                    <MudFileUpload T="IBrowserFile" FilesChanged="HandleExcelUpload" Accept=".xlsx,.xls">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Filled" Color="Color.Success"
+                                StartIcon="@Icons.Material.Filled.Upload">
+                                @L["SelectFile"]
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                }
+
+                @if (_importResults.Any())
+                {
+                    <MudPaper Class="pa-3 mt-4" Outlined="true">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">
+                            @L["Progress"] (@_importResults.Count(r => r.Success) @L["Success"], @_importResults.Count(r => !r.Success) @L["Error"])
+                        </MudText>
+                        <MudSimpleTable Dense="true" Hover="true" Style="max-height: 300px; overflow-y: auto;">
+                            <thead>
+                                <tr>
+                                    <th>@L["Product"]</th>
+                                    <th>@L["Status"]</th>
+                                    <th>@L["Info"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var result in _importResults)
+                                {
+                                    <tr>
+                                        <td>@result.ProductName</td>
+                                        <td>
+                                            @if (result.Success)
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                            }
+                                            else
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error" Size="Size.Small" />
+                                            }
+                                        </td>
+                                        <td>@result.Message</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudPaper>
+                }
+
+                @if (!string.IsNullOrEmpty(_importError))
+                {
+                    <MudAlert Severity="Severity.Error">@_importError</MudAlert>
+                }
+            </MudStack>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="CloseImportModal" Color="Color.Default">@L["Cancel"]</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudContainer>
 
 @code {
     [Inject] private IProductService ProductService { get; set; } = default!;
     [Inject] private ICategoryService CategoryService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
 
-    private IReadOnlyList<ProductResponse> _products = new List<ProductResponse>();
+    private IReadOnlyList<ProductResponse>? _products;
     private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
     private bool _showModal;
+    private bool _showImportModal;
     private bool _isEditing;
+    private bool _isImporting;
     private Guid? _editingId;
     private ProductFormModel _formModel = new();
+    private CategoryResponse? _selectedCategory;
+    private string? _imageUploadError;
+    private string? _importError;
+    private List<ImportResultResponse> _importResults = new();
+    private DialogOptions _dialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Small };
+    private DialogOptions _importDialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Medium };
 
     protected override async Task OnInitializedAsync()
     {
+        Lang.OnLanguageChanged += OnLanguageChanged;
         await LoadData();
     }
 
     private async Task LoadData()
     {
-        _products = await ProductService.GetAllAsync();
-        _categories = await CategoryService.GetAllAsync();
+        try
+        {
+            _products = await ProductService.GetAllAsync();
+            _categories = await CategoryService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
     }
 
     private void ShowAddModal()
     {
         _formModel = new ProductFormModel();
+        _selectedCategory = null;
+        _imageUploadError = null;
         _isEditing = false;
         _editingId = null;
         _showModal = true;
@@ -135,11 +261,22 @@
             SellPrice = product.SellPrice,
             StockQuantity = product.StockQuantity,
             CategoryId = product.CategoryId,
-            IsActive = product.IsActive
+            IsActive = product.IsActive,
+            ImageUrl = product.ImageUrl
         };
+        _selectedCategory = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+        _imageUploadError = null;
         _isEditing = true;
         _editingId = product.Id;
         _showModal = true;
+    }
+
+    private void ShowImportModal()
+    {
+        _importResults.Clear();
+        _importError = null;
+        _isImporting = false;
+        _showImportModal = true;
     }
 
     private void CloseModal()
@@ -147,44 +284,180 @@
         _showModal = false;
     }
 
+    private async Task CloseImportModal()
+    {
+        _showImportModal = false;
+        if (_importResults.Any(r => r.Success))
+        {
+            await LoadData();
+        }
+    }
+
+    private Task<IEnumerable<CategoryResponse>> SearchCategories(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult<IEnumerable<CategoryResponse>>(_categories);
+        return Task.FromResult<IEnumerable<CategoryResponse>>(_categories.Where(c => c.Name.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void OnCategoryChanged(CategoryResponse? category)
+    {
+        _selectedCategory = category;
+        if (category != null)
+            _formModel.CategoryId = category.Id;
+    }
+
+    private async Task HandleImageUpload(IBrowserFile file)
+    {
+        try
+        {
+            _imageUploadError = null;
+
+            if (file.Size > 10 * 1024 * 1024)
+            {
+                _imageUploadError = L["Error"];
+                return;
+            }
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(file.Name).ToLower();
+            if (!allowedExtensions.Contains(extension))
+            {
+                _imageUploadError = L["Error"];
+                return;
+            }
+
+            using var stream = file.OpenReadStream(10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+            var base64 = Convert.ToBase64String(bytes);
+            _formModel.ImageUrl = $"data:image/{extension.TrimStart('.')};base64,{base64}";
+            Snackbar.Add(L["Success"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _imageUploadError = $"{L["Error"]}: {ex.Message}";
+        }
+    }
+
+    private async Task HandleExcelUpload(IBrowserFile file)
+    {
+        try
+        {
+            _importError = null;
+            _importResults.Clear();
+            _isImporting = true;
+            StateHasChanged();
+
+            // Send file to server API for import
+            var results = await ProductService.ImportExcelAsync(file);
+
+            if (results != null && results.Any())
+            {
+                _importResults = results.ToList();
+                var successCount = _importResults.Count(r => r.Success);
+                Snackbar.Add($"{L["ImportSuccess"]}: {successCount}/{_importResults.Count}",
+                    successCount == _importResults.Count ? Severity.Success : Severity.Warning);
+            }
+            else
+            {
+                _importError = L["ImportFailed"];
+            }
+        }
+        catch (Exception ex)
+        {
+            _importError = $"{L["ImportFailed"]}: {ex.Message}";
+        }
+        finally
+        {
+            _isImporting = false;
+            StateHasChanged();
+        }
+    }
+
     private async Task SaveProduct()
     {
-        if (_isEditing && _editingId.HasValue)
+        try
         {
-            var request = new UpdateProductRequest(
-                _formModel.Name,
-                _formModel.Description,
-                _formModel.SKU,
-                _formModel.CostPrice,
-                _formModel.SellPrice,
-                _formModel.StockQuantity,
-                _formModel.CategoryId,
-                _formModel.IsActive
-            );
-            await ProductService.UpdateAsync(_editingId.Value, request);
-        }
-        else
-        {
-            var request = new CreateProductRequest(
-                _formModel.Name,
-                _formModel.Description,
-                _formModel.SKU,
-                _formModel.CostPrice,
-                _formModel.SellPrice,
-                _formModel.StockQuantity,
-                _formModel.CategoryId
-            );
-            await ProductService.CreateAsync(request);
-        }
+            if (_formModel.CategoryId == Guid.Empty)
+            {
+                Snackbar.Add(L["SelectCategory"], Severity.Warning);
+                return;
+            }
 
-        _showModal = false;
-        await LoadData();
+            if (_isEditing && _editingId.HasValue)
+            {
+                var request = new UpdateProductRequest(
+                    _formModel.Name,
+                    _formModel.Description,
+                    _formModel.SKU,
+                    _formModel.CostPrice,
+                    _formModel.SellPrice,
+                    _formModel.StockQuantity,
+                    _formModel.CategoryId,
+                    _formModel.IsActive
+                );
+                await ProductService.UpdateAsync(_editingId.Value, request);
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
+            }
+            else
+            {
+                var request = new CreateProductRequest(
+                    _formModel.Name,
+                    _formModel.Description,
+                    _formModel.SKU,
+                    _formModel.CostPrice,
+                    _formModel.SellPrice,
+                    _formModel.StockQuantity,
+                    _formModel.CategoryId
+                );
+                await ProductService.CreateAsync(request);
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
+            }
+
+            _showModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task DeleteProduct(Guid id)
     {
-        await ProductService.DeleteAsync(id);
-        await LoadData();
+        var parameters = new DialogParameters<ConfirmDialog>();
+        parameters.Add(x => x.ContentText, L["DeleteConfirm"]);
+        parameters.Add(x => x.ButtonText, L["Delete"]);
+        parameters.Add(x => x.Color, Color.Error);
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["Delete"], parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            try
+            {
+                await ProductService.DeleteAsync(id);
+                Snackbar.Add(L["SuccessfullyDeleted"], Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private class ProductFormModel
@@ -197,5 +470,6 @@
         public int StockQuantity { get; set; }
         public Guid CategoryId { get; set; }
         public bool IsActive { get; set; } = true;
+        public string? ImageUrl { get; set; }
     }
 }

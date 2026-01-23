@@ -1,50 +1,279 @@
 @page "/login"
 @layout LoginLayout
-@using DevExpress.Blazor
 
-<div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
-    <DxCard CssClass="shadow" style="width: 400px;">
-        <HeaderTemplate>
-            <div class="text-center py-2">
-                <h3 class="mb-0">SellerInventer</h3>
-                <small class="text-muted">Sign in to your account</small>
+<div class="login-wrapper">
+    <div class="login-left">
+        <div class="login-branding">
+            <div class="brand-icon">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Large" />
             </div>
-        </HeaderTemplate>
-        <BodyTemplate>
+            <h1>SellerInventer</h1>
+            <p>Modern POS & Inventory Management System</p>
+        </div>
+        <div class="login-features">
+            <div class="feature-item">
+                <MudIcon Icon="@Icons.Material.Filled.Speed" />
+                <span>Fast & Efficient POS</span>
+            </div>
+            <div class="feature-item">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                <span>Real-time Inventory Tracking</span>
+            </div>
+            <div class="feature-item">
+                <MudIcon Icon="@Icons.Material.Filled.Analytics" />
+                <span>Detailed Sales Reports</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-right">
+        <MudPaper Class="login-card" Elevation="0">
+            <div class="login-header">
+                <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" />
+                </MudAvatar>
+                <MudText Typo="Typo.h5" Class="mb-1" Style="font-weight: 600;">Welcome Back</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Sign in to continue to your dashboard</MudText>
+            </div>
+
             @if (!string.IsNullOrEmpty(_errorMessage))
             {
-                <div class="alert alert-danger mb-3">@_errorMessage</div>
+                <MudAlert Severity="Severity.Error" Class="mb-4" Dense="true" Variant="Variant.Filled">
+                    @_errorMessage
+                </MudAlert>
             }
 
-            <EditForm Model="_loginModel" OnValidSubmit="HandleLogin" Context="editContext">
+            <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
-                <DxFormLayout>
-                    <DxFormLayoutItem Caption="Username" ColSpanMd="12">
-                        <DxTextBox @bind-Text="_loginModel.Username" NullText="Enter username" />
-                    </DxFormLayoutItem>
-                    <DxFormLayoutItem Caption="Password" ColSpanMd="12">
-                        <DxTextBox @bind-Text="_loginModel.Password" Password="true" NullText="Enter password" />
-                    </DxFormLayoutItem>
-                </DxFormLayout>
+                <MudStack Spacing="4" Class="login-fields">
+                    <MudTextField @bind-Value="_loginModel.Username"
+                        Label="Username"
+                        Variant="Variant.Outlined"
+                        Adornment="Adornment.Start"
+                        AdornmentIcon="@Icons.Material.Filled.Person"
+                        FullWidth="true"
+                        Required="true" />
 
-                <DxButton Text="@(_isLoading ? "Signing in..." : "Sign In")"
-                          RenderStyle="ButtonRenderStyle.Primary"
-                          CssClass="w-100 mt-3"
-                          SubmitFormOnClick="true"
-                          Enabled="!_isLoading" />
+                    <MudTextField @bind-Value="_loginModel.Password"
+                        Label="Password"
+                        InputType="InputType.Password"
+                        Variant="Variant.Outlined"
+                        Adornment="Adornment.Start"
+                        AdornmentIcon="@Icons.Material.Filled.Lock"
+                        FullWidth="true"
+                        Required="true" />
+
+                    <MudButton Variant="Variant.Filled"
+                        Color="Color.Primary"
+                        FullWidth="true"
+                        Size="Size.Large"
+                        ButtonType="ButtonType.Submit"
+                        Disabled="_isLoading"
+                        Class="login-button">
+                        @if (_isLoading)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Signing in...</span>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Login" Class="mr-2" />
+                            <span>Sign In</span>
+                        }
+                    </MudButton>
+                </MudStack>
             </EditForm>
 
-            <div class="mt-4 p-3 bg-light rounded text-center">
-                <small class="text-muted">
-                    <strong>Demo credentials:</strong><br />
-                    Admin: admin / Admin@123<br />
-                    Manager: manager / Manager@123<br />
-                    Staff: staff / Staff@123
-                </small>
+            <MudDivider Class="my-5" />
+
+            <div class="demo-credentials">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-3" Align="Align.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
+                    Demo Credentials
+                </MudText>
+                <div class="credentials-grid">
+                    <div class="credential-item" @onclick='() => QuickLogin("admin", "Admin@123")'>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">Admin</MudChip>
+                        <span class="credential-text">admin / Admin@123</span>
+                    </div>
+                    <div class="credential-item" @onclick='() => QuickLogin("manager", "Manager@123")'>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Manager</MudChip>
+                        <span class="credential-text">manager / Manager@123</span>
+                    </div>
+                    <div class="credential-item" @onclick='() => QuickLogin("staff", "Staff@123")'>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">Staff</MudChip>
+                        <span class="credential-text">staff / Staff@123</span>
+                    </div>
+                </div>
             </div>
-        </BodyTemplate>
-    </DxCard>
+        </MudPaper>
+    </div>
 </div>
+
+<style>
+    .login-wrapper {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .login-left {
+        flex: 1;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 48px;
+        color: white;
+    }
+
+    .login-branding {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .brand-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        backdrop-filter: blur(10px);
+    }
+
+    .login-branding h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        letter-spacing: -0.5px;
+    }
+
+    .login-branding p {
+        opacity: 0.9;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .login-features {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        font-size: 14px;
+    }
+
+    .login-right {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px;
+        background: #f5f7fa;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        padding: 40px;
+        background: white !important;
+        border-radius: 24px !important;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .login-button {
+        height: 48px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+    }
+
+    .demo-credentials {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .credentials-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .credential-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+    }
+
+    .credential-item:hover {
+        background: #f1f5f9;
+        border-color: #667eea;
+    }
+
+    .credential-text {
+        font-size: 13px;
+        color: #64748b;
+        font-family: monospace;
+    }
+
+    /* Fix floating label background to cut through border */
+    .login-fields .mud-input-label {
+        background-color: white;
+        padding: 0 6px;
+        margin-left: -4px;
+    }
+
+    .login-fields .mud-input-label-outlined.mud-input-label-inputcontrol {
+        background-color: white;
+        padding: 0 6px;
+    }
+
+    @@media (max-width: 900px) {
+        .login-wrapper {
+            flex-direction: column;
+        }
+
+        .login-left {
+            padding: 32px;
+            min-height: auto;
+        }
+
+        .login-features {
+            display: none;
+        }
+
+        .login-right {
+            padding: 24px;
+        }
+
+        .login-card {
+            padding: 24px;
+        }
+    }
+</style>
 
 @code {
     [Inject] private IAuthService AuthService { get; set; } = default!;
@@ -81,6 +310,12 @@
         {
             _isLoading = false;
         }
+    }
+
+    private void QuickLogin(string username, string password)
+    {
+        _loginModel.Username = username;
+        _loginModel.Password = password;
     }
 
     private class LoginModel

@@ -1,47 +1,65 @@
 @page "/"
 @attribute [Authorize]
+@implements IDisposable
 
 <PageTitle>Dashboard - SellerInventer</PageTitle>
 
-<div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-</div>
+<MudText Typo="Typo.h4" Class="mb-4">@L["Dashboard"]</MudText>
 
 @if (_isLoading)
 {
-    <p>Loading...</p>
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
 }
 else
 {
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">Today's Orders</div>
-            <div class="stat-value">@_dailyReport?.TotalOrders</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Today's Revenue</div>
-            <div class="stat-value">$@_dailyReport?.TotalRevenue.ToString("N2")</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Average Order Value</div>
-            <div class="stat-value">$@_dailyReport?.AverageOrderValue.ToString("N2")</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Products</div>
-            <div class="stat-value">@_products.Count</div>
-        </div>
-    </div>
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.8);">@L["TodaysOrders"]</MudText>
+                    <MudText Typo="Typo.h4" Style="color: white; font-weight: 700;">@Lang.FormatNumber(_dailyReport?.TotalOrders ?? 0)</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.8);">@L["TodaysRevenue"]</MudText>
+                    <MudText Typo="Typo.h4" Style="color: white; font-weight: 700;">@Lang.FormatCurrency(_dailyReport?.TotalRevenue ?? 0)</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.8);">@L["AverageOrderValue"]</MudText>
+                    <MudText Typo="Typo.h4" Style="color: white; font-weight: 700;">@Lang.FormatCurrency(_dailyReport?.AverageOrderValue ?? 0)</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.8);">@L["TotalProducts"]</MudText>
+                    <MudText Typo="Typo.h4" Style="color: white; font-weight: 700;">@Lang.FormatNumber(_products.Count)</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 
-    <div class="card">
-        <h2 style="margin-bottom: 1rem;">Top Selling Products Today</h2>
-        @if (_dailyReport?.TopSellingProducts.Any() == true)
+    <MudPaper Class="pa-4 mt-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">
+            <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Class="mr-2" Style="vertical-align: middle;" />
+            @L["TopSellingProductsToday"]
+        </MudText>
+        @if (_dailyReport?.TopSellingProducts?.Any() == true)
         {
-            <table class="table">
+            <MudSimpleTable Dense="true" Hover="true" Striped="true">
                 <thead>
                     <tr>
-                        <th>Product</th>
-                        <th>Quantity Sold</th>
-                        <th>Revenue</th>
+                        <th>@L["Product"]</th>
+                        <th>@L["QuantitySold"]</th>
+                        <th>@L["Revenue"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,23 +67,31 @@ else
                     {
                         <tr>
                             <td>@product.ProductName</td>
-                            <td>@product.QuantitySold</td>
-                            <td>$@product.Revenue.ToString("N2")</td>
+                            <td>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">@Lang.FormatNumber(product.QuantitySold)</MudChip>
+                            </td>
+                            <td>
+                                <MudText Color="Color.Success">@Lang.FormatCurrency(product.Revenue)</MudText>
+                            </td>
                         </tr>
                     }
                 </tbody>
-            </table>
+            </MudSimpleTable>
         }
         else
         {
-            <p style="color: var(--text-secondary);">No sales today</p>
+            <MudAlert Severity="Severity.Info" Variant="Variant.Text">
+                @L["NoSalesToday"]
+            </MudAlert>
         }
-    </div>
+    </MudPaper>
 }
 
 @code {
     [Inject] private IReportService ReportService { get; set; } = default!;
     [Inject] private IProductService ProductService { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
 
     private DailySalesReport? _dailyReport;
     private IReadOnlyList<ProductResponse> _products = new List<ProductResponse>();
@@ -73,6 +99,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Lang.OnLanguageChanged += OnLanguageChanged;
         try
         {
             _dailyReport = await ReportService.GetDailySalesAsync();
@@ -86,5 +113,15 @@ else
         {
             _isLoading = false;
         }
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
     }
 }

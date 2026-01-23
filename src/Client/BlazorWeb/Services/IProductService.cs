@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components.Forms;
 using SellerInventer.Shared.Contracts.Product;
 
 namespace SellerInventer.Client.BlazorWeb.Services;
@@ -10,4 +11,5 @@ public interface IProductService
     Task<ProductResponse?> CreateAsync(CreateProductRequest request);
     Task<ProductResponse?> UpdateAsync(Guid id, UpdateProductRequest request);
     Task<bool> DeleteAsync(Guid id);
+    Task<IReadOnlyList<ImportResultResponse>?> ImportExcelAsync(IBrowserFile file);
 }

@@ -11,4 +11,5 @@ public interface IProductService
     Task<ProductDto> UpdateAsync(Guid id, UpdateProductDto dto, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task UpdateStockAsync(Guid id, int quantity, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ImportResultDto>> ImportAsync(IEnumerable<ImportProductDto> products, CancellationToken cancellationToken = default);
 }

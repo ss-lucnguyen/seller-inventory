@@ -108,6 +108,76 @@ public class ProductService : IProductService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ImportResultDto>> ImportAsync(IEnumerable<ImportProductDto> products, CancellationToken cancellationToken = default)
+    {
+        var results = new List<ImportResultDto>();
+        var productList = products.ToList();
+
+        try
+        {
+            // Get or create categories
+            var categoryNames = productList.Select(p => p.CategoryName).Distinct().ToList();
+            var existingCategories = await _unitOfWork.Categories.FindAsync(
+                c => categoryNames.Contains(c.Name), cancellationToken);
+
+            var existingCategoryDict = existingCategories.ToDictionary(c => c.Name, c => c.Id);
+            var newCategories = new List<Category>();
+
+            foreach (var categoryName in categoryNames.Where(cn => !existingCategoryDict.ContainsKey(cn)))
+            {
+                var category = new Category { Name = categoryName };
+                newCategories.Add(category);
+                existingCategoryDict[categoryName] = category.Id;
+            }
+
+            if (newCategories.Any())
+            {
+                foreach (var category in newCategories)
+                {
+                    await _unitOfWork.Categories.AddAsync(category, cancellationToken);
+                }
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+
+            // Create products
+            foreach (var dto in productList)
+            {
+                try
+                {
+                    var product = new Product
+                    {
+                        Name = dto.Name,
+                        Description = dto.Description,
+                        SKU = dto.SKU,
+                        CostPrice = dto.CostPrice,
+                        SellPrice = dto.SellPrice,
+                        StockQuantity = dto.StockQuantity,
+                        CategoryId = existingCategoryDict[dto.CategoryName],
+                        IsActive = true
+                    };
+
+                    await _unitOfWork.Products.AddAsync(product, cancellationToken);
+                    results.Add(new ImportResultDto(dto.Name, true, "Success"));
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new ImportResultDto(dto.Name, false, ex.Message));
+                }
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            foreach (var product in productList.Where(p => !results.Any(r => r.ProductName == p.Name)))
+            {
+                results.Add(new ImportResultDto(product.Name, false, ex.Message));
+            }
+        }
+
+        return results.AsReadOnly();
+    }
+
     private static ProductDto MapToDto(Product product, string categoryName) =>
         new(
             product.Id,
@@ -120,6 +190,7 @@ public class ProductService : IProductService
             product.IsActive,
             product.CategoryId,
             categoryName,
+            product.ImageUrl,
             product.CreatedAt,
             product.UpdatedAt
         );

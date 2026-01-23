@@ -1,155 +1,144 @@
 @page "/users"
 @attribute [Authorize(Roles = "Admin")]
+@implements IDisposable
 
-<PageTitle>Users - SellerInventer</PageTitle>
+<PageTitle>@L["Users"] - SellerInventer</PageTitle>
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>User Management</h2>
-        <DxButton Text="Add User" IconCssClass="oi oi-plus" RenderStyle="ButtonRenderStyle.Primary" Click="ShowAddModal" />
-    </div>
-
-    @if (!string.IsNullOrEmpty(_message))
-    {
-        <div class="alert @(_isSuccess ? "alert-success" : "alert-danger") alert-dismissible mb-3">
-            @_message
-            <button type="button" class="btn-close" @onclick="() => _message = null"></button>
-        </div>
-    }
-
-    <DxGrid Data="_users"
-            ShowFilterRow="true"
-            ShowSearchBox="true"
-            PageSize="10"
-            PagerVisible="true"
-            CssClass="w-100">
-        <Columns>
-            <DxGridDataColumn FieldName="Username" Caption="Username" />
-            <DxGridDataColumn FieldName="Email" Caption="Email" />
-            <DxGridDataColumn FieldName="FullName" Caption="Full Name" />
-            <DxGridDataColumn FieldName="Role" Caption="Role">
-                <CellDisplayTemplate>
-                    @{
-                        var role = (string)context.Value;
-                        <span class="badge @GetRoleBadgeClass(role)">@role</span>
-                    }
-                </CellDisplayTemplate>
-            </DxGridDataColumn>
-            <DxGridDataColumn FieldName="IsActive" Caption="Status">
-                <CellDisplayTemplate>
-                    @{
-                        var isActive = (bool)context.Value;
-                        <span class="badge @(isActive ? "bg-success" : "bg-danger")">
-                            @(isActive ? "Active" : "Inactive")
-                        </span>
-                    }
-                </CellDisplayTemplate>
-            </DxGridDataColumn>
-            <DxGridDataColumn FieldName="CreatedAt" Caption="Created" DisplayFormat="d" />
-            <DxGridDataColumn Caption="Actions" Width="280px">
-                <CellDisplayTemplate>
-                    @{
-                        var user = (UserResponse)context.DataItem;
-                        <DxButton Text="Edit" RenderStyle="ButtonRenderStyle.Secondary" SizeMode="SizeMode.Small" Click="() => ShowEditModal(user)" CssClass="me-1" />
-                        <DxButton Text="Reset Pwd" RenderStyle="ButtonRenderStyle.Warning" SizeMode="SizeMode.Small" Click="() => ShowResetPasswordModal(user)" CssClass="me-1" />
-                        <DxButton Text="@(user.IsActive ? "Deactivate" : "Activate")"
-                                  RenderStyle="@(user.IsActive ? ButtonRenderStyle.Danger : ButtonRenderStyle.Success)"
-                                  SizeMode="SizeMode.Small"
-                                  Click="() => ToggleActive(user)" />
-                    }
-                </CellDisplayTemplate>
-            </DxGridDataColumn>
-        </Columns>
-    </DxGrid>
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">@L["UserManagement"]</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+               OnClick="ShowAddModal">@L["AddUser"]</MudButton>
 </div>
 
-<DxPopup @bind-Visible="_showModal"
-         HeaderText="@(_isEditing ? "Edit User" : "Add User")"
-         Width="500px"
-         CloseOnOutsideClick="false"
-         ShowCloseButton="true">
-    <BodyContentTemplate Context="popupContext">
-        <EditForm Model="_formModel" OnValidSubmit="SaveUser" Context="editContext">
-            <DataAnnotationsValidator />
-            <DxFormLayout>
-                @if (!_isEditing)
-                {
-                    <DxFormLayoutItem Caption="Username" ColSpanMd="12">
-                        <DxTextBox @bind-Text="_formModel.Username" />
-                    </DxFormLayoutItem>
-                }
+@if (_users == null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudPaper Elevation="2">
+        <MudDataGrid Items="_users" Hover="true" Dense="true" Striped="true">
+            <Columns>
+                <PropertyColumn Property="x => x.Username" Title="@L["Username"]" />
+                <PropertyColumn Property="x => x.Email" Title="@L["Email"]" />
+                <PropertyColumn Property="x => x.FullName" Title="@L["FullName"]" />
+                <TemplateColumn Title="@L["Role"]">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Color="@GetRoleColor(context.Item.Role)">
+                            @GetLocalizedRole(context.Item.Role)
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="@L["Status"]">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Color="@(context.Item.IsActive ? Color.Success : Color.Error)">
+                            @(context.Item.IsActive ? L["IsActive"] : L["Inactive"])
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="@L["Created"]">
+                    <CellTemplate>
+                        @Lang.FormatDate(context.Item.CreatedAt)
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="@L["Actions"]">
+                    <CellTemplate>
+                        <MudStack Row Spacing="1">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                OnClick="() => ShowEditModal(context.Item)" Title="@L["Edit"]" />
+                            <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small" Color="Color.Warning"
+                                OnClick="() => ShowResetPasswordModal(context.Item)" Title="@L["ResetPassword"]" />
+                            <MudIconButton Icon="@(context.Item.IsActive ? Icons.Material.Filled.PersonOff : Icons.Material.Filled.PersonAdd)"
+                                Size="Size.Small" Color="@(context.Item.IsActive ? Color.Error : Color.Success)"
+                                OnClick="() => ToggleActive(context.Item)"
+                                Title="@(context.Item.IsActive ? L["Deactivate"] : L["Activate"])" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="UserResponse" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudPaper>
+}
 
-                <DxFormLayoutItem Caption="Email" ColSpanMd="12">
-                    <DxTextBox @bind-Text="_formModel.Email" />
-                </DxFormLayoutItem>
-
-                @if (!_isEditing)
-                {
-                    <DxFormLayoutItem Caption="Password" ColSpanMd="12">
-                        <DxTextBox @bind-Text="_formModel.Password" Password="true" />
-                    </DxFormLayoutItem>
-                }
-
-                <DxFormLayoutItem Caption="Full Name" ColSpanMd="12">
-                    <DxTextBox @bind-Text="_formModel.FullName" />
-                </DxFormLayoutItem>
-
-                <DxFormLayoutItem Caption="Role" ColSpanMd="12">
-                    <DxComboBox Data="_roles"
-                                @bind-Value="_formModel.Role"
-                                NullText="Select Role" />
-                </DxFormLayoutItem>
-
-                @if (_isEditing)
-                {
-                    <DxFormLayoutItem Caption="Active" ColSpanMd="12">
-                        <DxCheckBox @bind-Checked="_formModel.IsActive" />
-                    </DxFormLayoutItem>
-                }
-            </DxFormLayout>
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" Click="CloseModal" />
-                <DxButton Text="Save" RenderStyle="ButtonRenderStyle.Primary" SubmitFormOnClick="true" />
-            </div>
-        </EditForm>
-    </BodyContentTemplate>
-</DxPopup>
-
-<DxPopup @bind-Visible="_showResetPasswordModal"
-         HeaderText="Reset Password"
-         Width="400px"
-         CloseOnOutsideClick="false"
-         ShowCloseButton="true">
-    <BodyContentTemplate Context="popupContext">
-        <p class="mb-3">Reset password for <strong>@_selectedUser?.Username</strong></p>
-        <EditForm Model="_resetPasswordModel" OnValidSubmit="ResetPassword" Context="editContext">
-            <DxFormLayout>
-                <DxFormLayoutItem Caption="New Password" ColSpanMd="12">
-                    <DxTextBox @bind-Text="_resetPasswordModel.NewPassword" Password="true" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Confirm Password" ColSpanMd="12">
-                    <DxTextBox @bind-Text="_resetPasswordModel.ConfirmPassword" Password="true" />
-                </DxFormLayoutItem>
-            </DxFormLayout>
-
-            @if (_resetPasswordModel.NewPassword != _resetPasswordModel.ConfirmPassword && !string.IsNullOrEmpty(_resetPasswordModel.ConfirmPassword))
+<!-- Add/Edit User Dialog -->
+<MudDialog @bind-Visible="_showModal" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_isEditing ? L["Edit"] + " " + L["Users"] : L["AddUser"])</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            @if (!_isEditing)
             {
-                <div class="alert alert-danger mt-2">Passwords do not match</div>
+                <MudTextField @bind-Value="_formModel.Username" Label="@L["Username"]" Variant="Variant.Outlined" Required="true" />
             }
 
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" Click="CloseResetPasswordModal" />
-                <DxButton Text="Reset Password" RenderStyle="ButtonRenderStyle.Primary" SubmitFormOnClick="true"
-                          Enabled="@(_resetPasswordModel.NewPassword == _resetPasswordModel.ConfirmPassword && !string.IsNullOrEmpty(_resetPasswordModel.NewPassword))" />
-            </div>
-        </EditForm>
-    </BodyContentTemplate>
-</DxPopup>
+            <MudTextField @bind-Value="_formModel.Email" Label="@L["Email"]" InputType="InputType.Email" Variant="Variant.Outlined" Required="true" />
+
+            @if (!_isEditing)
+            {
+                <MudTextField @bind-Value="_formModel.Password" Label="@L["Password"]" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+            }
+
+            <MudTextField @bind-Value="_formModel.FullName" Label="@L["FullName"]" Variant="Variant.Outlined" />
+
+            <MudSelect T="string" @bind-Value="_formModel.Role" Label="@L["Role"]" Variant="Variant.Outlined" Required="true">
+                @foreach (var role in _roles)
+                {
+                    <MudSelectItem Value="@role">@GetLocalizedRole(role)</MudSelectItem>
+                }
+            </MudSelect>
+
+            @if (_isEditing)
+            {
+                <MudCheckBox T="bool" @bind-Value="_formModel.IsActive" Label="@L["IsActive"]" />
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseModal" Color="Color.Default">@L["Cancel"]</MudButton>
+        <MudButton OnClick="SaveUser" Variant="Variant.Filled" Color="Color.Primary">@L["Save"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<!-- Reset Password Dialog -->
+<MudDialog @bind-Visible="_showResetPasswordModal" Options="_smallDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["ResetPassword"]</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-3">@L["ResetPassword"] <strong>@_selectedUser?.Username</strong></MudText>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_resetPasswordModel.NewPassword" Label="@L["NewPassword"]"
+                InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+            <MudTextField @bind-Value="_resetPasswordModel.ConfirmPassword" Label="@L["ConfirmPassword"]"
+                InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+
+            @if (_resetPasswordModel.NewPassword != _resetPasswordModel.ConfirmPassword
+                && !string.IsNullOrEmpty(_resetPasswordModel.ConfirmPassword))
+            {
+                <MudAlert Severity="Severity.Error">@L["PasswordMismatch"]</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseResetPasswordModal" Color="Color.Default">@L["Cancel"]</MudButton>
+        <MudButton OnClick="ResetPassword" Variant="Variant.Filled" Color="Color.Primary"
+            Disabled="@(_resetPasswordModel.NewPassword != _resetPasswordModel.ConfirmPassword || string.IsNullOrEmpty(_resetPasswordModel.NewPassword))">
+            @L["ResetPassword"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     [Inject] private IUserService UserService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
 
-    private IReadOnlyList<UserResponse> _users = new List<UserResponse>();
+    private IReadOnlyList<UserResponse>? _users;
     private readonly List<string> _roles = new() { "Staff", "Manager", "Admin" };
     private bool _showModal;
     private bool _showResetPasswordModal;
@@ -158,25 +147,24 @@
     private UserResponse? _selectedUser;
     private UserFormModel _formModel = new();
     private ResetPasswordModel _resetPasswordModel = new();
-    private string? _message;
-    private bool _isSuccess;
+    private DialogOptions _dialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Small };
+    private DialogOptions _smallDialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.ExtraSmall };
 
     protected override async Task OnInitializedAsync()
     {
+        Lang.OnLanguageChanged += OnLanguageChanged;
         await LoadData();
     }
 
     private async Task LoadData()
     {
-        _message = null;
         try
         {
             _users = await UserService.GetAllAsync();
         }
         catch (Exception ex)
         {
-            _message = $"Error loading users: {ex.Message}";
-            _isSuccess = false;
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
         }
     }
 
@@ -236,13 +224,11 @@
                 var result = await UserService.UpdateAsync(_editingId.Value, request);
                 if (result is not null)
                 {
-                    _message = "User updated successfully";
-                    _isSuccess = true;
+                    Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
                 }
                 else
                 {
-                    _message = "Failed to update user";
-                    _isSuccess = false;
+                    Snackbar.Add(L["Error"], Severity.Error);
                 }
             }
             else
@@ -257,13 +243,11 @@
                 var result = await UserService.CreateAsync(request);
                 if (result is not null)
                 {
-                    _message = "User created successfully";
-                    _isSuccess = true;
+                    Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
                 }
                 else
                 {
-                    _message = "Failed to create user";
-                    _isSuccess = false;
+                    Snackbar.Add(L["Error"], Severity.Error);
                 }
             }
 
@@ -272,8 +256,7 @@
         }
         catch (Exception ex)
         {
-            _message = $"Error: {ex.Message}";
-            _isSuccess = false;
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
         }
     }
 
@@ -288,13 +271,11 @@
 
             if (success)
             {
-                _message = $"Password reset for {_selectedUser.Username}";
-                _isSuccess = true;
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
             }
             else
             {
-                _message = "Failed to reset password";
-                _isSuccess = false;
+                Snackbar.Add(L["Error"], Severity.Error);
             }
 
             _showResetPasswordModal = false;
@@ -302,8 +283,7 @@
         }
         catch (Exception ex)
         {
-            _message = $"Error: {ex.Message}";
-            _isSuccess = false;
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
         }
     }
 
@@ -314,29 +294,44 @@
             var success = await UserService.ToggleActiveAsync(user.Id);
             if (success)
             {
-                _message = $"User {user.Username} {(user.IsActive ? "deactivated" : "activated")}";
-                _isSuccess = true;
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
                 await LoadData();
             }
             else
             {
-                _message = "Failed to update user status";
-                _isSuccess = false;
+                Snackbar.Add(L["Error"], Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            _message = $"Error: {ex.Message}";
-            _isSuccess = false;
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
         }
     }
 
-    private string GetRoleBadgeClass(string role) => role switch
+    private Color GetRoleColor(string role) => role switch
     {
-        "Admin" => "bg-danger",
-        "Manager" => "bg-warning text-dark",
-        _ => "bg-info"
+        "Admin" => Color.Error,
+        "Manager" => Color.Warning,
+        _ => Color.Info
     };
+
+    private string GetLocalizedRole(string role) => role switch
+    {
+        "Admin" => L["Admin"],
+        "Manager" => L["Manager"],
+        "Staff" => L["Staff"],
+        _ => role
+    };
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
+    }
 
     private class UserFormModel
     {

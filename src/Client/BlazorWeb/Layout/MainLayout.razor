@@ -1,59 +1,122 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 
-<DxLayoutBreakpoint DeviceSize="DeviceSize.XSmall" @bind-IsActive="_isXSmallScreen" />
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-<div class="d-flex" style="min-height: 100vh;">
-    <aside class="bg-dark text-white d-flex flex-column" style="width: 250px; @(_isSidebarCollapsed && _isXSmallScreen ? "display: none !important;" : "")">
-        <div class="p-3 border-bottom border-secondary">
-            <h4 class="mb-0 text-center">SellerInventer</h4>
-        </div>
-        <NavMenu />
+<MudLayout>
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+            OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h6" Class="ml-3">SellerInventer</MudText>
+        <MudSpacer />
+
+        <!-- Language Switcher -->
+        <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight"
+            TransformOrigin="Origin.TopRight">
+            <MudMenuItem OnClick="@(() => SetLanguage(Language.ENG))">
+                <div class="d-flex align-center gap-2">
+                    <MudText>🇺🇸</MudText>
+                    <MudText>English</MudText>
+                    @if (_currentLanguage == Language.ENG)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" />
+                    }
+                </div>
+            </MudMenuItem>
+            <MudMenuItem OnClick="@(() => SetLanguage(Language.VIE))">
+                <div class="d-flex align-center gap-2">
+                    <MudText>🇻🇳</MudText>
+                    <MudText>Tiếng Việt</MudText>
+                    @if (_currentLanguage == Language.VIE)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" />
+                    }
+                </div>
+            </MudMenuItem>
+        </MudMenu>
+
         <AuthorizeView>
             <Authorized>
-                <div class="mt-auto p-3 border-top border-secondary">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
-                            <span class="text-white fw-bold">@(context.User.Identity?.Name?[0].ToString().ToUpper())</span>
-                        </div>
-                        <div>
-                            <div class="fw-semibold">@context.User.Identity?.Name</div>
-                            <small class="text-muted">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small>
-                        </div>
-                    </div>
-                    <DxButton Text="Logout" RenderStyle="ButtonRenderStyle.Light" CssClass="w-100" Click="Logout" />
-                </div>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="ml-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                    <MudText Typo="Typo.body2">@context.User.Identity?.Name</MudText>
+                    <MudButton Variant="Variant.Text" Color="Color.Inherit" Size="Size.Small" OnClick="@Logout"
+                        StartIcon="@Icons.Material.Filled.Logout">
+                        @L["Logout"]
+                    </MudButton>
+                </MudStack>
             </Authorized>
         </AuthorizeView>
-    </aside>
-
-    <main class="flex-grow-1 bg-light">
-        <nav class="navbar navbar-light bg-white shadow-sm px-4 d-flex d-md-none">
-            <button class="btn btn-outline-secondary" @onclick="ToggleSidebar">
-                <span class="oi oi-menu"></span>
-            </button>
-            <span class="navbar-brand mb-0">SellerInventer</span>
-        </nav>
-        <div class="p-4">
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Menu</MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudDivider Class="my-2" />
+                <MudStack Class="pa-3" Spacing="0">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@(_currentLanguage == Language.VIE ? "Đăng nhập với" : "Logged in as")</MudText>
+                    <MudText Typo="Typo.body2">@context.User.Identity?.Name</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                    </MudText>
+                </MudStack>
+            </Authorized>
+        </AuthorizeView>
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4">
             @Body
-        </div>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 @code {
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private ILanguageService LanguageService { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
 
-    private bool _isXSmallScreen;
-    private bool _isSidebarCollapsed = true;
+    private bool _drawerOpen = true;
+    private Language _currentLanguage = Language.ENG;
 
-    private void ToggleSidebar()
+    protected override async Task OnInitializedAsync()
     {
-        _isSidebarCollapsed = !_isSidebarCollapsed;
+        await LanguageService.InitializeAsync();
+        _currentLanguage = LanguageService.CurrentLanguage;
+        LanguageService.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
     }
 
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
         Navigation.NavigateTo("/login", true);
+    }
+
+    private async Task SetLanguage(Language language)
+    {
+        await LanguageService.SetLanguageAsync(language);
+    }
+
+    private void OnLanguageChanged()
+    {
+        _currentLanguage = LanguageService.CurrentLanguage;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LanguageService.OnLanguageChanged -= OnLanguageChanged;
     }
 }

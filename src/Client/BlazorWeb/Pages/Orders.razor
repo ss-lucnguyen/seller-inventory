@@ -1,73 +1,88 @@
 @page "/orders"
 @attribute [Authorize]
+@implements IDisposable
 
 <PageTitle>Orders - SellerInventer</PageTitle>
 
-<div class="page-header">
-    <h1 class="page-title">Orders</h1>
-</div>
+<MudText Typo="Typo.h4" Class="mb-4">@L["Orders"]</MudText>
 
 @if (_isLoading)
 {
-    <p>Loading...</p>
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
 }
 else
 {
-    <div class="card">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Order Number</th>
-                    <th>Date</th>
-                    <th>Items</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <AuthorizeView Roles="Admin">
-                        <th>Actions</th>
-                    </AuthorizeView>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var order in _orders)
-                {
-                    <tr>
-                        <td>@order.OrderNumber</td>
-                        <td>@order.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@order.Items.Count items</td>
-                        <td>$@order.Total.ToString("N2")</td>
-                        <td>
-                            <span class="badge @GetStatusBadgeClass(order.Status)">
-                                @order.Status
-                            </span>
-                        </td>
-                        <AuthorizeView Roles="Admin">
-                            <td>
-                                <select class="form-control" style="width: auto; display: inline-block;"
-                                        @onchange="e => UpdateStatus(order.Id, e.Value?.ToString())">
-                                    <option value="Pending" selected="@(order.Status == "Pending")">Pending</option>
-                                    <option value="Confirmed" selected="@(order.Status == "Confirmed")">Confirmed</option>
-                                    <option value="Completed" selected="@(order.Status == "Completed")">Completed</option>
-                                    <option value="Cancelled" selected="@(order.Status == "Cancelled")">Cancelled</option>
-                                </select>
-                            </td>
-                        </AuthorizeView>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    <MudPaper Elevation="2">
+        <MudTable Items="_orders" Hover="true" Striped="true" Filter="new Func<OrderResponse, bool>(FilterFunc)">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">@L["OrderList"]</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchString" Placeholder="@L["SearchOrders"]" Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.OrderNumber)">@L["OrderNumber"]</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.OrderDate)">@L["Date"]</MudTableSortLabel></MudTh>
+                <MudTh>@L["Items"]</MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.Total)">@L["Total"]</MudTableSortLabel></MudTh>
+                <MudTh>@L["Status"]</MudTh>
+                <AuthorizeView Roles="Admin" Context="authContext">
+                    <MudTh Style="width: 200px;">@L["Actions"]</MudTh>
+                </AuthorizeView>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="@L["OrderNumber"]">
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.OrderNumber</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["Date"]">
+                    <MudText Typo="Typo.body2">@Lang.FormatDate(context.OrderDate)</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OrderDate.ToString("HH:mm")</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["Items"]">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@context.Items.Count @L["Items"]</MudChip>
+                </MudTd>
+                <MudTd DataLabel="@L["Total"]">
+                    <MudText Typo="Typo.body1" Color="Color.Success" Style="font-weight: 600;">@Lang.FormatCurrency(context.Total)</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["Status"]">
+                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">@GetLocalizedStatus(context.Status)</MudChip>
+                </MudTd>
+                <AuthorizeView Roles="Admin" Context="authContext">
+                    <MudTd DataLabel="@L["Actions"]">
+                        <MudSelect T="string" Value="@context.Status" ValueChanged="@(value => UpdateStatus(context.Id, value))"
+                                   Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
+                            <MudSelectItem Value="@("Pending")">@L["Pending"]</MudSelectItem>
+                            <MudSelectItem Value="@("Confirmed")">@L["Confirmed"]</MudSelectItem>
+                            <MudSelectItem Value="@("Completed")">@L["Completed"]</MudSelectItem>
+                            <MudSelectItem Value="@("Cancelled")">@L["Cancelled"]</MudSelectItem>
+                        </MudSelect>
+                    </MudTd>
+                </AuthorizeView>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Align="Align.Center" Class="pa-4">@L["NoOrders"]</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
 }
 
 @code {
     [Inject] private IOrderService OrderService { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private IReadOnlyList<OrderResponse> _orders = new List<OrderResponse>();
     private bool _isLoading = true;
     private bool _isAdmin;
+    private string _searchString = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
+        Lang.OnLanguageChanged += OnLanguageChanged;
         var state = await AuthState;
         _isAdmin = state.User.IsInRole("Admin");
         await LoadData();
@@ -82,6 +97,17 @@ else
         _isLoading = false;
     }
 
+    private bool FilterFunc(OrderResponse order)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+        if (order.OrderNumber.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (order.Status.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
     private async Task UpdateStatus(Guid orderId, string? status)
     {
         if (string.IsNullOrEmpty(status)) return;
@@ -89,11 +115,30 @@ else
         await LoadData();
     }
 
-    private string GetStatusBadgeClass(string status) => status switch
+    private Color GetStatusColor(string status) => status switch
     {
-        "Completed" => "badge-success",
-        "Cancelled" => "badge-danger",
-        "Confirmed" => "badge-warning",
-        _ => "badge-warning"
+        "Completed" => Color.Success,
+        "Cancelled" => Color.Error,
+        "Confirmed" => Color.Info,
+        _ => Color.Warning
     };
+
+    private string GetLocalizedStatus(string status) => status switch
+    {
+        "Pending" => L["Pending"],
+        "Confirmed" => L["Confirmed"],
+        "Completed" => L["Completed"],
+        "Cancelled" => L["Cancelled"],
+        _ => status
+    };
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
+    }
 }

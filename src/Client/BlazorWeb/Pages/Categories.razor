@@ -1,93 +1,102 @@
 @page "/categories"
 @attribute [Authorize(Roles = "Admin")]
+@implements IDisposable
 
-<PageTitle>Categories - SellerInventer</PageTitle>
+<PageTitle>@L["Categories"] - SellerInventer</PageTitle>
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Categories</h2>
-        <DxButton Text="Add Category" IconCssClass="oi oi-plus" RenderStyle="ButtonRenderStyle.Primary" Click="ShowAddModal" />
-    </div>
-
-    <DxGrid Data="_categories"
-            ShowFilterRow="true"
-            ShowSearchBox="true"
-            PageSize="10"
-            PagerVisible="true"
-            CssClass="w-100">
-        <Columns>
-            <DxGridDataColumn FieldName="Name" Caption="Name" />
-            <DxGridDataColumn FieldName="Description" Caption="Description" />
-            <DxGridDataColumn FieldName="IsActive" Caption="Status">
-                <CellDisplayTemplate>
-                    @{
-                        var isActive = (bool)context.Value;
-                        <span class="badge @(isActive ? "bg-success" : "bg-danger")">
-                            @(isActive ? "Active" : "Inactive")
-                        </span>
-                    }
-                </CellDisplayTemplate>
-            </DxGridDataColumn>
-            <DxGridDataColumn Caption="Actions" Width="180px">
-                <CellDisplayTemplate>
-                    @{
-                        var category = (CategoryResponse)context.DataItem;
-                        <DxButton Text="Edit" RenderStyle="ButtonRenderStyle.Secondary" SizeMode="SizeMode.Small" Click="() => ShowEditModal(category)" CssClass="me-1" />
-                        <DxButton Text="Delete" RenderStyle="ButtonRenderStyle.Danger" SizeMode="SizeMode.Small" Click="() => DeleteCategory(category.Id)" />
-                    }
-                </CellDisplayTemplate>
-            </DxGridDataColumn>
-        </Columns>
-    </DxGrid>
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">@L["Categories"]</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="ShowAddModal">@L["AddCategory"]</MudButton>
 </div>
 
-<DxPopup @bind-Visible="_showModal"
-         HeaderText="@(_isEditing ? "Edit Category" : "Add Category")"
-         Width="400px"
-         CloseOnOutsideClick="false"
-         ShowCloseButton="true">
-    <BodyContentTemplate Context="popupContext">
-        <EditForm Model="_formModel" OnValidSubmit="SaveCategory" Context="editContext">
-            <DataAnnotationsValidator />
-            <DxFormLayout>
-                <DxFormLayoutItem Caption="Name" ColSpanMd="12">
-                    <DxTextBox @bind-Text="_formModel.Name" />
-                </DxFormLayoutItem>
-                <DxFormLayoutItem Caption="Description" ColSpanMd="12">
-                    <DxMemo @bind-Text="_formModel.Description" Rows="3" />
-                </DxFormLayoutItem>
-                @if (_isEditing)
-                {
-                    <DxFormLayoutItem Caption="Active" ColSpanMd="12">
-                        <DxCheckBox @bind-Checked="_formModel.IsActive" />
-                    </DxFormLayoutItem>
-                }
-            </DxFormLayout>
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" Click="CloseModal" />
-                <DxButton Text="Save" RenderStyle="ButtonRenderStyle.Primary" SubmitFormOnClick="true" />
-            </div>
-        </EditForm>
-    </BodyContentTemplate>
-</DxPopup>
+@if (_categories == null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudPaper Elevation="2">
+        <MudDataGrid Items="_categories" Hover="true" Dense="true" Striped="true">
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="@L["CategoryName"]" />
+                <PropertyColumn Property="x => x.Description" Title="@L["Description"]" />
+                <TemplateColumn Title="@L["Status"]">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Color="@(context.Item.IsActive ? Color.Success : Color.Error)">
+                            @(context.Item.IsActive ? L["IsActive"] : L["Inactive"])
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="@L["Actions"]">
+                    <CellTemplate>
+                        <MudStack Row Spacing="1">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                OnClick="() => ShowEditModal(context.Item)" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                OnClick="() => DeleteCategory(context.Item.Id)" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="CategoryResponse" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudPaper>
+}
+
+<!-- Add/Edit Category Dialog -->
+<MudDialog @bind-Visible="_showModal" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_isEditing ? L["Edit"] + " " + L["Category"] : L["AddCategory"])</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_formModel.Name" Label="@L["CategoryName"]" Variant="Variant.Outlined" Required="true" />
+            <MudTextField @bind-Value="_formModel.Description" Label="@L["Description"]" Variant="Variant.Outlined" Lines="3" />
+            @if (_isEditing)
+            {
+                <MudCheckBox T="bool" @bind-Value="_formModel.IsActive" Label="@L["IsActive"]" />
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseModal" Color="Color.Default">@L["Cancel"]</MudButton>
+        <MudButton OnClick="SaveCategory" Variant="Variant.Filled" Color="Color.Primary">@L["Save"]</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     [Inject] private ICategoryService CategoryService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
 
-    private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
+    private IReadOnlyList<CategoryResponse>? _categories;
     private bool _showModal;
     private bool _isEditing;
     private Guid? _editingId;
     private CategoryFormModel _formModel = new();
+    private DialogOptions _dialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Small };
 
     protected override async Task OnInitializedAsync()
     {
+        Lang.OnLanguageChanged += OnLanguageChanged;
         await LoadData();
     }
 
     private async Task LoadData()
     {
-        _categories = await CategoryService.GetAllAsync();
+        try
+        {
+            _categories = await CategoryService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
     }
 
     private void ShowAddModal()
@@ -118,25 +127,63 @@
 
     private async Task SaveCategory()
     {
-        if (_isEditing && _editingId.HasValue)
+        try
         {
-            var request = new UpdateCategoryRequest(_formModel.Name, _formModel.Description, _formModel.IsActive);
-            await CategoryService.UpdateAsync(_editingId.Value, request);
-        }
-        else
-        {
-            var request = new CreateCategoryRequest(_formModel.Name, _formModel.Description);
-            await CategoryService.CreateAsync(request);
-        }
+            if (_isEditing && _editingId.HasValue)
+            {
+                var request = new UpdateCategoryRequest(_formModel.Name, _formModel.Description, _formModel.IsActive);
+                await CategoryService.UpdateAsync(_editingId.Value, request);
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
+            }
+            else
+            {
+                var request = new CreateCategoryRequest(_formModel.Name, _formModel.Description);
+                await CategoryService.CreateAsync(request);
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
+            }
 
-        _showModal = false;
-        await LoadData();
+            _showModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task DeleteCategory(Guid id)
     {
-        await CategoryService.DeleteAsync(id);
-        await LoadData();
+        var parameters = new DialogParameters<ConfirmDialog>();
+        parameters.Add(x => x.ContentText, L["DeleteConfirm"]);
+        parameters.Add(x => x.ButtonText, L["Delete"]);
+        parameters.Add(x => x.Color, Color.Error);
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["Delete"], parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            try
+            {
+                await CategoryService.DeleteAsync(id);
+                Snackbar.Add(L["SuccessfullyDeleted"], Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private class CategoryFormModel

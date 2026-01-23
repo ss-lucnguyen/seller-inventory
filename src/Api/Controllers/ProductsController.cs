@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SellerInventer.Application.DTOs.Product;
 using SellerInventer.Application.Interfaces;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
+using ClosedXML.Excel;
 
 namespace SellerInventer.Api.Controllers;
 
@@ -99,6 +103,151 @@ public class ProductsController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    [HttpPost("import")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> Import([FromBody] IEnumerable<ImportProductDto> products, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var results = await _productService.ImportAsync(products, cancellationToken);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("upload-image")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> UploadImage([FromForm] IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var fileExtension = Path.GetExtension(file.FileName).ToLower();
+
+        if (!allowedExtensions.Contains(fileExtension))
+            return BadRequest("Invalid file type. Allowed: jpg, jpeg, png, webp");
+
+        if (file.Length > 10 * 1024 * 1024) // 10MB max
+            return BadRequest("File size exceeds maximum of 10MB");
+
+        try
+        {
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = $"{Guid.NewGuid()}.jpg";
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.CopyToAsync(memoryStream, cancellationToken);
+                memoryStream.Position = 0;
+
+                using (var image = await Image.LoadAsync(memoryStream, cancellationToken))
+                {
+                    // Resize to max 1200x1200
+                    if (image.Width > 1200 || image.Height > 1200)
+                    {
+                        image.Mutate(x => x.Resize(
+                            new ResizeOptions
+                            {
+                                Size = new Size(1200, 1200),
+                                Mode = ResizeMode.Max
+                            }));
+                    }
+
+                    // Compress by adjusting JPEG quality
+                    using (var outputStream = System.IO.File.Create(filePath))
+                    {
+                        for (int quality = 85; quality >= 10; quality -= 5)
+                        {
+                            outputStream.SetLength(0);
+                            outputStream.Seek(0, SeekOrigin.Begin);
+
+                            var encoder = new JpegEncoder { Quality = quality };
+                            await image.SaveAsync(outputStream, encoder, cancellationToken);
+
+                            if (outputStream.Length >= 300 * 1024 && outputStream.Length <= 500 * 1024)
+                                break;
+                        }
+                    }
+                }
+            }
+
+            var imageUrl = $"/uploads/products/{fileName}";
+            return Ok(new { imageUrl });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("import-excel")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> ImportExcel([FromForm] IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
+
+        var allowedExtensions = new[] { ".xlsx", ".xls" };
+        var fileExtension = Path.GetExtension(file.FileName).ToLower();
+
+        if (!allowedExtensions.Contains(fileExtension))
+            return BadRequest("Invalid file type. Allowed: xlsx, xls");
+
+        try
+        {
+            var products = new List<ImportProductDto>();
+
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.CopyToAsync(memoryStream, cancellationToken);
+                memoryStream.Position = 0;
+
+                using (var workbook = new ClosedXML.Excel.XLWorkbook(memoryStream))
+                {
+                    var worksheet = workbook.Worksheets.First();
+                    var rows = worksheet.RangeUsed().RowsUsed().Skip(1); // Skip header
+
+                    // Excel columns: No, ProductName, Category, SKU, SellPrice, CostPrice, InStock
+                    foreach (var row in rows)
+                    {
+                        try
+                        {
+                            var product = new ImportProductDto(
+                                Name: row.Cell(2).Value.ToString() ?? string.Empty,
+                                Description: null,
+                                SKU: row.Cell(4).Value.ToString(),
+                                CostPrice: Convert.ToDecimal(row.Cell(6).Value),
+                                SellPrice: Convert.ToDecimal(row.Cell(5).Value),
+                                StockQuantity: Convert.ToInt32(row.Cell(7).Value),
+                                CategoryName: row.Cell(3).Value.ToString() ?? string.Empty
+                            );
+                            products.Add(product);
+                        }
+                        catch
+                        {
+                            // Skip invalid rows
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            var results = await _productService.ImportAsync(products, cancellationToken);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 }
