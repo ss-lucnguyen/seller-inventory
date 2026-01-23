@@ -23,5 +23,6 @@ public record OrderItemResponse(
     string ProductName,
     decimal UnitPrice,
     int Quantity,
-    decimal TotalPrice
+    decimal TotalPrice,
+    string? ImageUrl
 );

@@ -21,7 +21,7 @@ public static class DbInitializer
             var adminUser = new User
             {
                 Username = "admin",
-                Email = "admin@sellerinventer.com",
+                Email = "admin@sellerinventory.com",
                 PasswordHash = passwordHasher.Hash("Admin@123"),
                 FullName = "System Administrator",
                 Role = UserRole.Admin,
@@ -31,7 +31,7 @@ public static class DbInitializer
             var managerUser = new User
             {
                 Username = "manager",
-                Email = "manager@sellerinventer.com",
+                Email = "manager@sellerinventory.com",
                 PasswordHash = passwordHasher.Hash("Manager@123"),
                 FullName = "Store Manager",
                 Role = UserRole.Manager,
@@ -41,7 +41,7 @@ public static class DbInitializer
             var staffUser = new User
             {
                 Username = "staff",
-                Email = "staff@sellerinventer.com",
+                Email = "staff@sellerinventory.com",
                 PasswordHash = passwordHasher.Hash("Staff@123"),
                 FullName = "Staff User",
                 Role = UserRole.Staff,

@@ -39,7 +39,9 @@ else
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OrderDate.ToString("HH:mm")</MudText>
                 </MudTd>
                 <MudTd DataLabel="@L["Items"]">
-                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@context.Items.Count @L["Items"]</MudChip>
+                    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => ShowOrderDetails(context))">
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@context.Items.Count @L["Items"]</MudChip>
+                    </MudButton>
                 </MudTd>
                 <MudTd DataLabel="@L["Total"]">
                     <MudText Typo="Typo.body1" Color="Color.Success" Style="font-weight: 600;">@Lang.FormatCurrency(context.Total)</MudText>
@@ -69,6 +71,125 @@ else
     </MudPaper>
 }
 
+<!-- Order Details Dialog -->
+<MudDialog @bind-Visible="_showDetailsModal" Options="_detailsDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["OrderDetails"] - @_selectedOrder?.OrderNumber</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_selectedOrder != null)
+        {
+            <MudStack Spacing="3">
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudGrid>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["OrderNumber"]</MudText>
+                            <MudText Typo="Typo.body2">@_selectedOrder.OrderNumber</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Date"]</MudText>
+                            <MudText Typo="Typo.body2">@Lang.FormatDate(_selectedOrder.OrderDate)</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Status"]</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_selectedOrder.Status)">
+                                @GetLocalizedStatus(_selectedOrder.Status)
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Customer"]</MudText>
+                            <MudText Typo="Typo.body2">@_selectedOrder.UserName</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+
+                <MudText Typo="Typo.subtitle2">@L["OrderItems"]</MudText>
+                <MudSimpleTable Dense="true" Hover="true">
+                    <thead>
+                        <tr>
+                            <th>@L["Image"]</th>
+                            <th>@L["ProductName"]</th>
+                            <th>@L["Quantity"]</th>
+                            <th>@L["UnitPrice"]</th>
+                            <th>@L["Total"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _selectedOrder.Items)
+                        {
+                            <tr>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <MudAvatar Size="Size.Medium" Rounded="true" Style="border: 1px solid #e0e0e0;">
+                                            <MudImage Src="@item.ImageUrl" Alt="@item.ProductName"
+                                                Style="width: 100%; height: 100%; object-fit: cover;" />
+                                        </MudAvatar>
+                                    }
+                                    else
+                                    {
+                                        <MudAvatar Size="Size.Medium" Rounded="true" Color="Color.Default">
+                                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                                        </MudAvatar>
+                                    }
+                                </td>
+                                <td>
+                                    <MudText Typo="Typo.body2">@item.ProductName</MudText>
+                                </td>
+                                <td>
+                                    <MudText Typo="Typo.body2">@item.Quantity</MudText>
+                                </td>
+                                <td>
+                                    <MudText Typo="Typo.body2">@Lang.FormatCurrency(item.UnitPrice)</MudText>
+                                </td>
+                                <td>
+                                    <MudText Typo="Typo.body2" Color="Color.Success" Style="font-weight: 600;">
+                                        @Lang.FormatCurrency(item.TotalPrice)
+                                    </MudText>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="background: rgba(0,0,0,0.02);">
+                    <MudGrid>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Subtotal"]</MudText>
+                            <MudText Typo="Typo.body2">@Lang.FormatCurrency(_selectedOrder.SubTotal)</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Tax"]</MudText>
+                            <MudText Typo="Typo.body2">@Lang.FormatCurrency(_selectedOrder.Tax)</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Discount"]</MudText>
+                            <MudText Typo="Typo.body2">@Lang.FormatCurrency(_selectedOrder.Discount)</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Total"]</MudText>
+                            <MudText Typo="Typo.body1" Color="Color.Success" Style="font-weight: 600;">
+                                @Lang.FormatCurrency(_selectedOrder.Total)
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+
+                @if (!string.IsNullOrEmpty(_selectedOrder.Notes))
+                {
+                    <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Notes"]</MudText>
+                        <MudText Typo="Typo.body2">@_selectedOrder.Notes</MudText>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDetailsModal" Color="Color.Default">@L["Close"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
 @code {
     [Inject] private IOrderService OrderService { get; set; } = default!;
     [Inject] private ILanguageService Lang { get; set; } = default!;
@@ -79,6 +200,9 @@ else
     private bool _isLoading = true;
     private bool _isAdmin;
     private string _searchString = string.Empty;
+    private bool _showDetailsModal;
+    private OrderResponse? _selectedOrder;
+    private DialogOptions _detailsDialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Medium };
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,6 +237,18 @@ else
         if (string.IsNullOrEmpty(status)) return;
         await OrderService.UpdateStatusAsync(orderId, new UpdateOrderStatusRequest(status));
         await LoadData();
+    }
+
+    private void ShowOrderDetails(OrderResponse order)
+    {
+        _selectedOrder = order;
+        _showDetailsModal = true;
+    }
+
+    private void CloseDetailsModal()
+    {
+        _showDetailsModal = false;
+        _selectedOrder = null;
     }
 
     private Color GetStatusColor(string status) => status switch

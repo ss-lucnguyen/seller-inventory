@@ -5,12 +5,12 @@ services:
     build:
       context: .
       dockerfile: src/Api/Dockerfile
-    container_name: sellerinventer-api
+    container_name: sellerinventory-api
     ports:
-      - "5000:80"
+      - "5001:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Data Source=/app/data/sellerinventer.db
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/sellerinventory.db
       - JwtSettings__SecretKey=${JWT_SECRET_KEY:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
       - JwtSettings__Issuer=SellerInventory
       - JwtSettings__Audience=SellerInventory
@@ -18,24 +18,24 @@ services:
     volumes:
       - api-data:/app/data
     networks:
-      - sellerinventer-network
+      - sellerinventory-network
     restart: unless-stopped
 
   web:
     build:
       context: .
       dockerfile: src/Client/BlazorWeb/Dockerfile
-    container_name: sellerinventer-web
+    container_name: sellerinventory-web
     ports:
-      - "5173:80"
+      - "5174:80"
     depends_on:
       - api
     networks:
-      - sellerinventer-network
+      - sellerinventory-network
     restart: unless-stopped
 
 networks:
-  sellerinventer-network:
+  sellerinventory-network:
     driver: bridge
 
 volumes:

@@ -6,5 +6,6 @@ public record OrderItemDto(
     string ProductName,
     decimal UnitPrice,
     int Quantity,
-    decimal TotalPrice
+    decimal TotalPrice,
+    string? ImageUrl
 );

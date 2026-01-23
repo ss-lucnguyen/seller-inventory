@@ -214,7 +214,8 @@ public class OrderService : IOrderService
                 i.ProductName,
                 i.UnitPrice,
                 i.Quantity,
-                i.TotalPrice
+                i.TotalPrice,
+                i.Product?.ImageUrl
             )).ToList(),
             order.CreatedAt,
             order.UpdatedAt
