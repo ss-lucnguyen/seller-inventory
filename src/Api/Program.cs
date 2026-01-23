@@ -1,6 +1,6 @@
-using SellerInventer.Application;
-using SellerInventer.Infrastructure;
-using SellerInventer.Infrastructure.Data;
+using SellerInventory.Application;
+using SellerInventory.Infrastructure;
+using SellerInventory.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +8,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new() { Title = "SellerInventer API", Version = "v1" });
+    options.SwaggerDoc("v1", new() { Title = "SellerInventory API", Version = "v1" });
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
@@ -60,7 +60,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "SellerInventer API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "SellerInventory API v1");
     });
 }
 

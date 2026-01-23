@@ -1,4 +1,4 @@
-namespace SellerInventer.Domain.Enums;
+namespace SellerInventory.Domain.Enums;
 
 public enum UserRole
 {

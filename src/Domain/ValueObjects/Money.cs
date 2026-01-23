@@ -1,4 +1,4 @@
-namespace SellerInventer.Domain.ValueObjects;
+namespace SellerInventory.Domain.ValueObjects;
 
 public record Money(decimal Amount, string Currency = "USD")
 {

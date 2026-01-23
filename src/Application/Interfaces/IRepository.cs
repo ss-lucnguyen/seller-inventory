@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
-using SellerInventer.Domain.Entities;
+using SellerInventory.Domain.Entities;
 
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface IRepository<T> where T : BaseEntity
 {

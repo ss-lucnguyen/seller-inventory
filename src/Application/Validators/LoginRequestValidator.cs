@@ -1,7 +1,7 @@
 using FluentValidation;
-using SellerInventer.Application.DTOs.Auth;
+using SellerInventory.Application.DTOs.Auth;
 
-namespace SellerInventer.Application.Validators;
+namespace SellerInventory.Application.Validators;
 
 public class LoginRequestValidator : AbstractValidator<LoginRequestDto>
 {

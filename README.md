@@ -1,1 +1,1 @@
-# seller-inventer
+# sellerinventory

@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SellerInventer.Infrastructure.Data;
+using SellerInventory.Infrastructure.Data;
 
 #nullable disable
 
-namespace SellerInventer.Infrastructure.Migrations
+namespace SellerInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20260121062108_InitialCreate")]
@@ -20,7 +20,7 @@ namespace SellerInventer.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Category", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Category", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +49,7 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Order", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -105,7 +105,7 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.OrderItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -144,7 +144,7 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -193,7 +193,7 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.User", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -241,9 +241,9 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Order", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Order", b =>
                 {
-                    b.HasOne("SellerInventer.Domain.Entities.User", "User")
+                    b.HasOne("SellerInventory.Domain.Entities.User", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -252,15 +252,15 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.OrderItem", b =>
                 {
-                    b.HasOne("SellerInventer.Domain.Entities.Order", "Order")
+                    b.HasOne("SellerInventory.Domain.Entities.Order", "Order")
                         .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SellerInventer.Domain.Entities.Product", "Product")
+                    b.HasOne("SellerInventory.Domain.Entities.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -271,9 +271,9 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Product", b =>
                 {
-                    b.HasOne("SellerInventer.Domain.Entities.Category", "Category")
+                    b.HasOne("SellerInventory.Domain.Entities.Category", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -282,22 +282,22 @@ namespace SellerInventer.Infrastructure.Migrations
                     b.Navigation("Category");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Category", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Category", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Order", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Order", b =>
                 {
                     b.Navigation("OrderItems");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.Product", b =>
                 {
                     b.Navigation("OrderItems");
                 });
 
-            modelBuilder.Entity("SellerInventer.Domain.Entities.User", b =>
+            modelBuilder.Entity("SellerInventory.Domain.Entities.User", b =>
                 {
                     b.Navigation("Orders");
                 });

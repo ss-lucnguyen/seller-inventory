@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
-using SellerInventer.Shared.Contracts.Report;
+using SellerInventory.Shared.Contracts.Report;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public class ReportService : IReportService
 {

@@ -1,4 +1,4 @@
-namespace SellerInventer.Shared.Contracts.Order;
+namespace SellerInventory.Shared.Contracts.Order;
 
 public record CreateOrderRequest(
     IReadOnlyList<CreateOrderItemRequest> Items,

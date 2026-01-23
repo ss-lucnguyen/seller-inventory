@@ -1,4 +1,4 @@
-namespace SellerInventer.Shared.Contracts.Category;
+namespace SellerInventory.Shared.Contracts.Category;
 
 public record CategoryResponse(
     Guid Id,

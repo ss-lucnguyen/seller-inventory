@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Components.Forms;
-using SellerInventer.Shared.Contracts.Product;
+using SellerInventory.Shared.Contracts.Product;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public class ProductService : IProductService
 {

@@ -1,4 +1,4 @@
-namespace SellerInventer.Application.DTOs.Report;
+namespace SellerInventory.Application.DTOs.Report;
 
 public record DailySalesReportDto(
     DateTime Date,

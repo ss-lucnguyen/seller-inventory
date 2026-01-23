@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <RootNamespace>SellerInventer.Client.BlazorWeb</RootNamespace>
+    <RootNamespace>SellerInventory.Client.BlazorWeb</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

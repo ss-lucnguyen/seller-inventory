@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SellerInventer.Application.DTOs.Auth;
-using SellerInventer.Application.Interfaces;
+using SellerInventory.Application.DTOs.Auth;
+using SellerInventory.Application.Interfaces;
 
-namespace SellerInventer.Api.Controllers;
+namespace SellerInventory.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]

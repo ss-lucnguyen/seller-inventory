@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>SellerInventer.Application</RootNamespace>
+    <RootNamespace>SellerInventory.Application</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

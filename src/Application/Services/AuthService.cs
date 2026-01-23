@@ -1,9 +1,9 @@
-using SellerInventer.Application.DTOs.Auth;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
-using SellerInventer.Domain.Enums;
+using SellerInventory.Application.DTOs.Auth;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
+using SellerInventory.Domain.Enums;
 
-namespace SellerInventer.Application.Services;
+namespace SellerInventory.Application.Services;
 
 public class AuthService : IAuthService
 {

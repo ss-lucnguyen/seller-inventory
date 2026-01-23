@@ -3,8 +3,8 @@ using MudBlazor.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using SellerInventer.Client.BlazorWeb;
-using SellerInventer.Client.BlazorWeb.Services;
+using SellerInventory.Client.BlazorWeb;
+using SellerInventory.Client.BlazorWeb.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -28,8 +28,10 @@ builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped(sp =>
 {
     var localStorage = sp.GetRequiredService<ILocalStorageService>();
-    var handler = new AuthorizationMessageHandler(localStorage);
-    handler.InnerHandler = new HttpClientHandler();
+    var handler = new AuthorizationMessageHandler(localStorage, sp)
+    {
+        InnerHandler = new HttpClientHandler()
+    };
 
     return new HttpClient(handler)
     {

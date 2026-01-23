@@ -1,4 +1,4 @@
-namespace SellerInventer.Shared.Contracts.Product;
+namespace SellerInventory.Shared.Contracts.Product;
 
 public record CreateProductRequest(
     string Name,
@@ -7,5 +7,6 @@ public record CreateProductRequest(
     decimal CostPrice,
     decimal SellPrice,
     int StockQuantity,
-    Guid CategoryId
+    Guid CategoryId,
+    string? ImageUrl = null
 );

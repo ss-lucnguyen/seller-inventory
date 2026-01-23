@@ -1,7 +1,7 @@
 using System.Globalization;
 using Blazored.LocalStorage;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public enum Language
 {

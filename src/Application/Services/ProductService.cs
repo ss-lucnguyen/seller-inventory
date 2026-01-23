@@ -1,8 +1,8 @@
-using SellerInventer.Application.DTOs.Product;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
+using SellerInventory.Application.DTOs.Product;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
 
-namespace SellerInventer.Application.Services;
+namespace SellerInventory.Application.Services;
 
 public class ProductService : IProductService
 {

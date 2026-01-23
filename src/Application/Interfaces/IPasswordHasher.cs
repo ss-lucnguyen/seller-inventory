@@ -1,4 +1,4 @@
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface IPasswordHasher
 {

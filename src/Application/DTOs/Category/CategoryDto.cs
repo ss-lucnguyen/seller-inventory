@@ -1,4 +1,4 @@
-namespace SellerInventer.Application.DTOs.Category;
+namespace SellerInventory.Application.DTOs.Category;
 
 public record CategoryDto(
     Guid Id,

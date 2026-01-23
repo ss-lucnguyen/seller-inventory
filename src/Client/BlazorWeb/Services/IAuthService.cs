@@ -1,6 +1,6 @@
-using SellerInventer.Shared.Contracts.Auth;
+using SellerInventory.Shared.Contracts.Auth;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public interface IAuthService
 {

@@ -2,12 +2,16 @@
 @attribute [Authorize(Roles = "Admin,Manager")]
 @implements IDisposable
 
-<PageTitle>@L["Products"] - SellerInventer</PageTitle>
+<PageTitle>@L["Products"] - SellerInventory</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4">
     <div class="d-flex justify-space-between align-center mb-4">
         <MudText Typo="Typo.h4">@L["Products"]</MudText>
         <MudStack Row Spacing="2">
+            <MudTextField @bind-Value="_searchString" Placeholder="@L["SearchProducts"]"
+                Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
+                Style="min-width: 250px;" />
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
                        OnClick="ShowAddModal">@L["AddProduct"]</MudButton>
             <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.FileUpload"
@@ -21,8 +25,25 @@
     }
     else
     {
-        <MudDataGrid Items="_products" Hover="true" Dense="true" Virtualize="true" Class="mt-4">
+        <MudDataGrid Items="FilteredProducts" Hover="true" Dense="false" Virtualize="true" Class="mt-4">
             <Columns>
+                <TemplateColumn Title="@L["Image"]" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        @if (!string.IsNullOrEmpty(context.Item.ImageUrl))
+                        {
+                            <MudAvatar Size="Size.Large" Rounded="true" Style="border: 1px solid #e0e0e0;">
+                                <MudImage Src="@context.Item.ImageUrl" Alt="@context.Item.Name"
+                                    Style="width: 100%; height: 100%; object-fit: cover;" />
+                            </MudAvatar>
+                        }
+                        else
+                        {
+                            <MudAvatar Size="Size.Large" Rounded="true" Color="Color.Default">
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                            </MudAvatar>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
                 <PropertyColumn Property="x => x.Name" Title="@L["ProductName"]" />
                 <PropertyColumn Property="x => x.SKU" Title="@L["SKU"]" />
                 <PropertyColumn Property="x => x.CategoryName" Title="@L["Category"]" />
@@ -47,10 +68,10 @@
                 <TemplateColumn Title="@L["Actions"]">
                     <CellTemplate>
                         <MudStack Row Spacing="1">
-                            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary"
-                                OnClick="() => ShowEditModal(context.Item)">@L["Edit"]</MudButton>
-                            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Error"
-                                OnClick="() => DeleteProduct(context.Item.Id)">@L["Delete"]</MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                OnClick="() => ShowEditModal(context.Item)" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                OnClick="() => DeleteProduct(context.Item.Id)" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -86,31 +107,41 @@
                 }
 
                 <!-- Image Upload Section -->
-                <MudPaper Class="pa-4 my-4" Outlined="true">
-                    <MudText Typo="Typo.subtitle2" Class="mb-2">@L["Image"]</MudText>
-                    @if (!string.IsNullOrEmpty(_formModel.ImageUrl))
-                    {
+                <MudPaper Class="pa-4" Outlined="true">
+                    <MudText Typo="Typo.subtitle2" Class="mb-3">@L["Image"]</MudText>
+                    <div class="d-flex align-center gap-4">
+                        @if (!string.IsNullOrEmpty(_formModel.ImageUrl))
+                        {
+                            <div style="position: relative;">
+                                <MudImage Src="@_formModel.ImageUrl" Alt="Product Image"
+                                    Style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 2px solid #e0e0e0;" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error"
+                                    Style="position: absolute; top: -8px; right: -8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+                                    OnClick="() => _formModel.ImageUrl = null" />
+                            </div>
+                        }
+                        else
+                        {
+                            <MudPaper Class="d-flex align-center justify-center" Outlined="true"
+                                Style="width: 120px; height: 120px; border-radius: 12px; border-style: dashed;">
+                                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" Color="Color.Default" />
+                            </MudPaper>
+                        }
                         <MudStack Spacing="2">
-                            <img src="@_formModel.ImageUrl" alt="Product Image"
-                                style="max-width: 200px; max-height: 200px;" />
-                            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Error"
-                                OnClick="() => _formModel.ImageUrl = null">@L["Delete"]</MudButton>
+                            <MudFileUpload T="IBrowserFile" FilesChanged="HandleImageUpload" Accept=".jpg,.jpeg,.png,.webp">
+                                <ActivatorContent>
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                        StartIcon="@Icons.Material.Filled.CloudUpload">
+                                        @(string.IsNullOrEmpty(_formModel.ImageUrl) ? L["UploadImage"] : L["Edit"])
+                                    </MudButton>
+                                </ActivatorContent>
+                            </MudFileUpload>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">JPG, PNG, WebP (max 10MB)</MudText>
                         </MudStack>
-                    }
-                    else
-                    {
-                        <MudFileUpload T="IBrowserFile" FilesChanged="HandleImageUpload" Accept=".jpg,.jpeg,.png,.webp">
-                            <ActivatorContent>
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                    StartIcon="@Icons.Material.Filled.CloudUpload">
-                                    @L["UploadImage"]
-                                </MudButton>
-                            </ActivatorContent>
-                        </MudFileUpload>
-                    }
+                    </div>
                     @if (!string.IsNullOrEmpty(_imageUploadError))
                     {
-                        <MudAlert Severity="Severity.Error" Class="mt-2">@_imageUploadError</MudAlert>
+                        <MudAlert Severity="Severity.Error" Class="mt-2" Dense="true">@_imageUploadError</MudAlert>
                     }
                 </MudPaper>
             </MudStack>
@@ -208,7 +239,15 @@
 
     private IReadOnlyList<ProductResponse>? _products;
     private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
+    private string _searchString = string.Empty;
     private bool _showModal;
+
+    private IEnumerable<ProductResponse> FilteredProducts => _products?.Where(p =>
+        string.IsNullOrWhiteSpace(_searchString) ||
+        p.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+        (p.SKU?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+        (p.CategoryName?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false)
+    ) ?? Enumerable.Empty<ProductResponse>();
     private bool _showImportModal;
     private bool _isEditing;
     private bool _isImporting;

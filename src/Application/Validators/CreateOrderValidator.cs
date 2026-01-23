@@ -1,7 +1,7 @@
 using FluentValidation;
-using SellerInventer.Application.DTOs.Order;
+using SellerInventory.Application.DTOs.Order;
 
-namespace SellerInventer.Application.Validators;
+namespace SellerInventory.Application.Validators;
 
 public class CreateOrderValidator : AbstractValidator<CreateOrderDto>
 {

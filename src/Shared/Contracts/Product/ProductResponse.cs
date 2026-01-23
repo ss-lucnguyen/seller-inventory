@@ -1,4 +1,4 @@
-namespace SellerInventer.Shared.Contracts.Product;
+namespace SellerInventory.Shared.Contracts.Product;
 
 public record ProductResponse(
     Guid Id,

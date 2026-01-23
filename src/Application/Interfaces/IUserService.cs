@@ -1,6 +1,6 @@
-using SellerInventer.Application.DTOs.User;
+using SellerInventory.Application.DTOs.User;
 
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface IUserService
 {

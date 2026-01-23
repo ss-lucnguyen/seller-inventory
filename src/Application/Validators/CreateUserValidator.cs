@@ -1,7 +1,7 @@
 using FluentValidation;
-using SellerInventer.Application.DTOs.User;
+using SellerInventory.Application.DTOs.User;
 
-namespace SellerInventer.Application.Validators;
+namespace SellerInventory.Application.Validators;
 
 public class CreateUserValidator : AbstractValidator<CreateUserDto>
 {

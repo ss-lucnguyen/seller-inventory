@@ -1,6 +1,6 @@
-using SellerInventer.Application.DTOs.Category;
+using SellerInventory.Application.DTOs.Category;
 
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface ICategoryService
 {

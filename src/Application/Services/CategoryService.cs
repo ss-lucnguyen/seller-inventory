@@ -1,8 +1,8 @@
-using SellerInventer.Application.DTOs.Category;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
+using SellerInventory.Application.DTOs.Category;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
 
-namespace SellerInventer.Application.Services;
+namespace SellerInventory.Application.Services;
 
 public class CategoryService : ICategoryService
 {

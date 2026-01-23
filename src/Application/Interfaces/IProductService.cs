@@ -1,6 +1,6 @@
-using SellerInventer.Application.DTOs.Product;
+using SellerInventory.Application.DTOs.Product;
 
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface IProductService
 {

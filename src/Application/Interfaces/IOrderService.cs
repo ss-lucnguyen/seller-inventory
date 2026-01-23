@@ -1,6 +1,6 @@
-using SellerInventer.Application.DTOs.Order;
+using SellerInventory.Application.DTOs.Order;
 
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface IOrderService
 {

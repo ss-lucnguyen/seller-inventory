@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
-using SellerInventer.Shared.Contracts.Auth;
+using SellerInventory.Shared.Contracts.Auth;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public class AuthService : IAuthService
 {

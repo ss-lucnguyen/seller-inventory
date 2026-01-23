@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
-using SellerInventer.Domain.Enums;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
+using SellerInventory.Domain.Enums;
 
-namespace SellerInventer.Infrastructure.Data;
+namespace SellerInventory.Infrastructure.Data;
 
 public static class DbInitializer
 {

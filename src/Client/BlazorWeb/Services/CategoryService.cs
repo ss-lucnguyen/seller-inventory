@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
-using SellerInventer.Shared.Contracts.Category;
+using SellerInventory.Shared.Contracts.Category;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public class CategoryService : ICategoryService
 {

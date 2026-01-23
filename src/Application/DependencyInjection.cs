@@ -1,9 +1,9 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Application.Services;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Application.Services;
 
-namespace SellerInventer.Application;
+namespace SellerInventory.Application;
 
 public static class DependencyInjection
 {

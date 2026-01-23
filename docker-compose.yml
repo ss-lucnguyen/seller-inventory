@@ -12,8 +12,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Data Source=/app/data/sellerinventer.db
       - JwtSettings__SecretKey=${JWT_SECRET_KEY:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
-      - JwtSettings__Issuer=SellerInventer
-      - JwtSettings__Audience=SellerInventer
+      - JwtSettings__Issuer=SellerInventory
+      - JwtSettings__Audience=SellerInventory
       - JwtSettings__ExpirationHours=24
     volumes:
       - api-data:/app/data

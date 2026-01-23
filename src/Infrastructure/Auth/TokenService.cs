@@ -3,10 +3,10 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
 
-namespace SellerInventer.Infrastructure.Auth;
+namespace SellerInventory.Infrastructure.Auth;
 
 public class TokenService : ITokenService
 {
@@ -21,8 +21,8 @@ public class TokenService : ITokenService
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-        var issuer = jwtSettings["Issuer"] ?? "SellerInventer";
-        var audience = jwtSettings["Audience"] ?? "SellerInventer";
+        var issuer = jwtSettings["Issuer"] ?? "SellerInventory";
+        var audience = jwtSettings["Audience"] ?? "SellerInventory";
         var expirationHours = int.Parse(jwtSettings["ExpirationHours"] ?? "24");
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

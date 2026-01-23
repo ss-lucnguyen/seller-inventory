@@ -1,6 +1,6 @@
-using SellerInventer.Domain.Enums;
+using SellerInventory.Domain.Enums;
 
-namespace SellerInventer.Domain.Entities;
+namespace SellerInventory.Domain.Entities;
 
 public class User : BaseEntity
 {

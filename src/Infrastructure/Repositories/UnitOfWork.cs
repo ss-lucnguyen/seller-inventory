@@ -1,8 +1,8 @@
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
-using SellerInventer.Infrastructure.Data;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
+using SellerInventory.Infrastructure.Data;
 
-namespace SellerInventer.Infrastructure.Repositories;
+namespace SellerInventory.Infrastructure.Repositories;
 
 public class UnitOfWork : IUnitOfWork
 {

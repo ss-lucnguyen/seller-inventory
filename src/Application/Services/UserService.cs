@@ -1,9 +1,9 @@
-using SellerInventer.Application.DTOs.User;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
-using SellerInventer.Domain.Enums;
+using SellerInventory.Application.DTOs.User;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
+using SellerInventory.Domain.Enums;
 
-namespace SellerInventer.Application.Services;
+namespace SellerInventory.Application.Services;
 
 public class UserService : IUserService
 {

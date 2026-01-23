@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SellerInventer.Application.DTOs.Category;
-using SellerInventer.Application.Interfaces;
+using SellerInventory.Application.DTOs.Category;
+using SellerInventory.Application.Interfaces;
 
-namespace SellerInventer.Api.Controllers;
+namespace SellerInventory.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]

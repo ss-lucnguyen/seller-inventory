@@ -1,3 +1,3 @@
-namespace SellerInventer.Shared.Contracts.Auth;
+namespace SellerInventory.Shared.Contracts.Auth;
 
 public record LoginRequest(string Username, string Password);

@@ -1,4 +1,4 @@
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public interface ILocalizationService
 {
@@ -203,8 +203,8 @@ public class LocalizationService : ILocalizationService
                 { "CostPrice", "Giá vốn" },
                 { "SellPrice", "Giá bán" },
                 { "StockQuantity", "Số lượng kho" },
-                { "IsActive", "Kích hoạt" },
-                { "Inactive", "Không kích hoạt" },
+                { "IsActive", "Đang Kinh doanh" },
+                { "Inactive", "Ngừng Kinh doanh" },
                 { "UploadImage", "Tải lên hình ảnh" },
                 { "ClickToUpload", "Nhấp để tải lên" },
                 { "Uploading", "Đang tải lên..." },

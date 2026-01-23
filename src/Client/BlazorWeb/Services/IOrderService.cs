@@ -1,6 +1,6 @@
-using SellerInventer.Shared.Contracts.Order;
+using SellerInventory.Shared.Contracts.Order;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public interface IOrderService
 {

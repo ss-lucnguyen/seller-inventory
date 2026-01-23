@@ -1,6 +1,6 @@
-using SellerInventer.Application.DTOs.Report;
+using SellerInventory.Application.DTOs.Report;
 
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface IReportService
 {

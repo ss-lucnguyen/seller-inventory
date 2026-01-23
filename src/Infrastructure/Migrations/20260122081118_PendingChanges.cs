@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace SellerInventer.Infrastructure.Migrations
+namespace SellerInventory.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class PendingChanges : Migration

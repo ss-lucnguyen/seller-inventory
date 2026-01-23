@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Infrastructure.Auth;
-using SellerInventer.Infrastructure.Data;
-using SellerInventer.Infrastructure.Repositories;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Infrastructure.Auth;
+using SellerInventory.Infrastructure.Data;
+using SellerInventory.Infrastructure.Repositories;
 
-namespace SellerInventer.Infrastructure;
+namespace SellerInventory.Infrastructure;
 
 public static class DependencyInjection
 {
@@ -43,8 +43,8 @@ public static class DependencyInjection
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings["Issuer"] ?? "SellerInventer",
-                ValidAudience = jwtSettings["Audience"] ?? "SellerInventer",
+                ValidIssuer = jwtSettings["Issuer"] ?? "SellerInventory",
+                ValidAudience = jwtSettings["Audience"] ?? "SellerInventory",
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
             };
         });

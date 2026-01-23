@@ -1,7 +1,7 @@
 using FluentValidation;
-using SellerInventer.Application.DTOs.Category;
+using SellerInventory.Application.DTOs.Category;
 
-namespace SellerInventer.Application.Validators;
+namespace SellerInventory.Application.Validators;
 
 public class CreateCategoryValidator : AbstractValidator<CreateCategoryDto>
 {

@@ -1,8 +1,8 @@
-using SellerInventer.Application.DTOs.Report;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Enums;
+using SellerInventory.Application.DTOs.Report;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Enums;
 
-namespace SellerInventer.Application.Services;
+namespace SellerInventory.Application.Services;
 
 public class ReportService : IReportService
 {

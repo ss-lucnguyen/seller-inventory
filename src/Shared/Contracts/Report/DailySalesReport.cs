@@ -1,4 +1,4 @@
-namespace SellerInventer.Shared.Contracts.Report;
+namespace SellerInventory.Shared.Contracts.Report;
 
 public record DailySalesReport(
     DateTime Date,

@@ -1,4 +1,4 @@
-namespace SellerInventer.Shared.Contracts.Auth;
+namespace SellerInventory.Shared.Contracts.Auth;
 
 public record RegisterRequest(
     string Username,

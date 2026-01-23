@@ -1,3 +1,3 @@
-namespace SellerInventer.Application.DTOs.Order;
+namespace SellerInventory.Application.DTOs.Order;
 
 public record UpdateOrderStatusDto(string Status);

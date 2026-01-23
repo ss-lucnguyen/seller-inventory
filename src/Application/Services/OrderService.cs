@@ -1,9 +1,9 @@
-using SellerInventer.Application.DTOs.Order;
-using SellerInventer.Application.Interfaces;
-using SellerInventer.Domain.Entities;
-using SellerInventer.Domain.Enums;
+using SellerInventory.Application.DTOs.Order;
+using SellerInventory.Application.Interfaces;
+using SellerInventory.Domain.Entities;
+using SellerInventory.Domain.Enums;
 
-namespace SellerInventer.Application.Services;
+namespace SellerInventory.Application.Services;
 
 public class OrderService : IOrderService
 {

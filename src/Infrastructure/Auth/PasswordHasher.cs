@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
-using SellerInventer.Application.Interfaces;
+using SellerInventory.Application.Interfaces;
 
-namespace SellerInventer.Infrastructure.Auth;
+namespace SellerInventory.Infrastructure.Auth;
 
 public class PasswordHasher : IPasswordHasher
 {

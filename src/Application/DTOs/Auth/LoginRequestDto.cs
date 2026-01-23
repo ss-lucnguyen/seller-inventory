@@ -1,3 +1,3 @@
-namespace SellerInventer.Application.DTOs.Auth;
+namespace SellerInventory.Application.DTOs.Auth;
 
 public record LoginRequestDto(string Username, string Password);

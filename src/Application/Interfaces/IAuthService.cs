@@ -1,6 +1,6 @@
-using SellerInventer.Application.DTOs.Auth;
+using SellerInventory.Application.DTOs.Auth;
 
-namespace SellerInventer.Application.Interfaces;
+namespace SellerInventory.Application.Interfaces;
 
 public interface IAuthService
 {

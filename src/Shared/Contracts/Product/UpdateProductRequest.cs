@@ -1,4 +1,4 @@
-namespace SellerInventer.Shared.Contracts.Product;
+namespace SellerInventory.Shared.Contracts.Product;
 
 public record UpdateProductRequest(
     string Name,
@@ -8,5 +8,6 @@ public record UpdateProductRequest(
     decimal SellPrice,
     int StockQuantity,
     Guid CategoryId,
-    bool IsActive
+    bool IsActive,
+    string? ImageUrl = null
 );

@@ -1,4 +1,4 @@
-namespace SellerInventer.Domain.Entities;
+namespace SellerInventory.Domain.Entities;
 
 public class Category : BaseEntity
 {

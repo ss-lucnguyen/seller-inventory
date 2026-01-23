@@ -1,4 +1,4 @@
-namespace SellerInventer.Application.DTOs.Product;
+namespace SellerInventory.Application.DTOs.Product;
 
 public record ImportProductDto(
     string Name,

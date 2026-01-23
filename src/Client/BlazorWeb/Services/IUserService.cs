@@ -1,6 +1,6 @@
-using SellerInventer.Shared.Contracts.User;
+using SellerInventory.Shared.Contracts.User;
 
-namespace SellerInventer.Client.BlazorWeb.Services;
+namespace SellerInventory.Client.BlazorWeb.Services;
 
 public interface IUserService
 {

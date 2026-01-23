@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using SellerInventer.Domain.Entities;
+using SellerInventory.Domain.Entities;
 
-namespace SellerInventer.Infrastructure.Data;
+namespace SellerInventory.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {

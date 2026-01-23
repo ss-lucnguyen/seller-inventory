@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SellerInventer.Application.DTOs.Product;
-using SellerInventer.Application.Interfaces;
+using SellerInventory.Application.DTOs.Product;
+using SellerInventory.Application.Interfaces;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using ClosedXML.Excel;
 
-namespace SellerInventer.Api.Controllers;
+namespace SellerInventory.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
