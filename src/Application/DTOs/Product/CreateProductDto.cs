@@ -7,5 +7,6 @@ public record CreateProductDto(
     decimal CostPrice,
     decimal SellPrice,
     int StockQuantity,
-    Guid CategoryId
+    Guid CategoryId,
+    string? ImageUrl = null
 );

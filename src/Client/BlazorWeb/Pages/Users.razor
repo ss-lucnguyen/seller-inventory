@@ -1,13 +1,17 @@
 @page "/users"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Manager,SystemAdmin")]
 @implements IDisposable
 
 <PageTitle>@L["Users"] - SellerInventory</PageTitle>
 
 <div class="d-flex justify-space-between align-center mb-4">
     <MudText Typo="Typo.h4">@L["UserManagement"]</MudText>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
-               OnClick="ShowAddModal">@L["AddUser"]</MudButton>
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Mail"
+                   OnClick="ShowInviteModal">@L["InviteUser"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+                   OnClick="ShowAddModal">@L["AddUser"]</MudButton>
+    </MudStack>
 </div>
 
 @if (_users == null)
@@ -32,7 +36,7 @@ else
                 <TemplateColumn Title="@L["Status"]">
                     <CellTemplate>
                         <MudChip T="string" Size="Size.Small" Color="@(context.Item.IsActive ? Color.Success : Color.Error)">
-                            @(context.Item.IsActive ? L["IsActive"] : L["Inactive"])
+                            @(context.Item.IsActive ? L["UserIsActive"] : L["UserInactive"])
                         </MudChip>
                     </CellTemplate>
                 </TemplateColumn>
@@ -132,21 +136,70 @@ else
     </DialogActions>
 </MudDialog>
 
+<!-- Invite User Dialog -->
+<MudDialog @bind-Visible="_showInviteModal" Options="_smallDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["InviteUser"]</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-3" Color="Color.Secondary">@L["InviteUserDescription"]</MudText>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_inviteModel.Email" Label="@L["Email"]"
+                InputType="InputType.Email" Variant="Variant.Outlined" Required="true"
+                Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Email" />
+
+            <MudSelect T="string" @bind-Value="_inviteModel.Role" Label="@L["Role"]" Variant="Variant.Outlined" Required="true">
+                @foreach (var role in _inviteRoles)
+                {
+                    <MudSelectItem Value="@role">@GetLocalizedRole(role)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+
+        @if (_invitationSent is not null)
+        {
+            <MudAlert Severity="Severity.Success" Class="mt-4">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.body2">@L["InvitationSentSuccessfully"]</MudText>
+                    <MudText Typo="Typo.caption">@L["ExpiresAt"]: @_invitationSent.ExpiresAt.ToLocalTime().ToString("g")</MudText>
+                </MudStack>
+            </MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseInviteModal" Color="Color.Default">@L["Close"]</MudButton>
+        <MudButton OnClick="SendInvitation" Variant="Variant.Filled" Color="Color.Primary"
+            Disabled="@(_isInviting || string.IsNullOrEmpty(_inviteModel.Email))">
+            @if (_isInviting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @L["SendInvitation"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
 @code {
     [Inject] private IUserService UserService { get; set; } = default!;
+    [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
     [Inject] private ILanguageService Lang { get; set; } = default!;
     [Inject] private ILocalizationService L { get; set; } = default!;
 
     private IReadOnlyList<UserResponse>? _users;
-    private readonly List<string> _roles = new() { "Staff", "Manager", "Admin" };
+    private readonly List<string> _roles = new() { "Staff", "Manager" };
+    private readonly List<string> _inviteRoles = new() { "Staff", "Manager" };
     private bool _showModal;
     private bool _showResetPasswordModal;
+    private bool _showInviteModal;
     private bool _isEditing;
+    private bool _isInviting;
     private Guid? _editingId;
     private UserResponse? _selectedUser;
     private UserFormModel _formModel = new();
     private ResetPasswordModel _resetPasswordModel = new();
+    private InviteUserModel _inviteModel = new();
+    private InvitationResponse? _invitationSent;
     private DialogOptions _dialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Small };
     private DialogOptions _smallDialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.ExtraSmall };
 
@@ -308,16 +361,66 @@ else
         }
     }
 
+    private void ShowInviteModal()
+    {
+        _inviteModel = new InviteUserModel { Role = "Staff" };
+        _invitationSent = null;
+        _showInviteModal = true;
+    }
+
+    private void CloseInviteModal()
+    {
+        _showInviteModal = false;
+        _invitationSent = null;
+    }
+
+    private async Task SendInvitation()
+    {
+        if (string.IsNullOrWhiteSpace(_inviteModel.Email))
+        {
+            Snackbar.Add(L["PleaseInputEmail"], Severity.Warning);
+            return;
+        }
+
+        _isInviting = true;
+        _invitationSent = null;
+
+        try
+        {
+            var request = new InviteUserRequest(_inviteModel.Email, _inviteModel.Role);
+            var result = await AuthService.InviteUserAsync(request);
+
+            if (result is not null)
+            {
+                _invitationSent = result;
+                Snackbar.Add(L["InvitationSentSuccessfully"], Severity.Success);
+                _inviteModel = new InviteUserModel { Role = "Staff" };
+            }
+            else
+            {
+                Snackbar.Add(L["FailedToSendInvitation"], Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isInviting = false;
+        }
+    }
+
     private Color GetRoleColor(string role) => role switch
     {
-        "Admin" => Color.Error,
+        "SystemAdmin" => Color.Error,
         "Manager" => Color.Warning,
         _ => Color.Info
     };
 
     private string GetLocalizedRole(string role) => role switch
     {
-        "Admin" => L["Admin"],
+        "SystemAdmin" => L["SystemAdmin"],
         "Manager" => L["Manager"],
         "Staff" => L["Staff"],
         _ => role
@@ -347,5 +450,11 @@ else
     {
         public string NewPassword { get; set; } = string.Empty;
         public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    private class InviteUserModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = "Staff";
     }
 }

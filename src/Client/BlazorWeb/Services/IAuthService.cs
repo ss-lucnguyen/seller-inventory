@@ -8,4 +8,10 @@ public interface IAuthService
     Task LogoutAsync();
     Task<UserInfo?> GetCurrentUserAsync();
     Task<string?> GetTokenAsync();
+
+    // Multi-tenant store registration
+    Task<LoginResponse?> RegisterStoreAsync(RegisterStoreRequest request);
+    Task<InvitationResponse?> InviteUserAsync(InviteUserRequest request);
+    Task<LoginResponse?> AcceptInvitationAsync(AcceptInvitationRequest request);
+    Task<InvitationResponse?> ValidateInvitationAsync(string token);
 }

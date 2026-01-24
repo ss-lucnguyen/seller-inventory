@@ -1,3 +1,4 @@
+using SellerInventory.Api.Middleware;
 using SellerInventory.Application;
 using SellerInventory.Infrastructure;
 using SellerInventory.Infrastructure.Data;
@@ -36,15 +37,15 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Configure CORS - allow configurable origins
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173", "https://localhost:5173", "http://localhost:7173", "https://localhost:7173" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazor", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "https://localhost:5173",
-                "http://localhost:7173",
-                "https://localhost:7173")
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -53,9 +54,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Initialize database
 await DbInitializer.InitializeAsync(app.Services);
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger in development and optionally in production
+if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("EnableSwagger"))
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -64,10 +67,16 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// Serve static files (for local image storage)
+app.UseStaticFiles();
+
 app.UseCors("AllowBlazor");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add tenant context middleware after authentication
+app.UseTenantMiddleware();
+
 app.MapControllers();
 
 app.Run();

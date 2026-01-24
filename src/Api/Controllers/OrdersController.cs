@@ -19,7 +19,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Manager")]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var orders = await _orderService.GetAllAsync(cancellationToken);
@@ -75,7 +75,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/status")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Manager")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusDto dto, CancellationToken cancellationToken)
     {
         try

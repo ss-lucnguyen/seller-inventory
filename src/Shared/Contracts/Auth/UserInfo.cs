@@ -6,5 +6,7 @@ public record UserInfo(
     string Email,
     string FullName,
     string Role,
-    bool IsActive
+    bool IsActive,
+    Guid? StoreId,
+    string? StoreName
 );

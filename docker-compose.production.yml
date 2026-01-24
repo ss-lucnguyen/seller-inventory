@@ -1,0 +1,42 @@
+version: '3.8'
+
+# Production docker-compose for deployment with NEON PostgreSQL
+# Use with: docker-compose -f docker-compose.production.yml up
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/Api/Dockerfile
+    image: gcr.io/${GCP_PROJECT_ID:-sellerinventory}/sellerinventory-api:${TAG:-latest}
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - StorageProvider=GoogleCloud
+      - ConnectionStrings__DefaultConnection=${NEON_DATABASE_URL}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+      - JwtSettings__Issuer=SellerInventory
+      - JwtSettings__Audience=SellerInventory
+      - JwtSettings__ExpirationHours=24
+      - GoogleCloud__BucketName=${GCS_BUCKET_NAME:-sellerinventory-images}
+      - AllowedOrigins__0=${CLIENT_URL:-https://sellerinventory.web.app}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Client/BlazorWeb/Dockerfile
+      args:
+        - API_BASE_URL=${API_URL:-https://api.sellerinventory.com}
+    image: gcr.io/${GCP_PROJECT_ID:-sellerinventory}/sellerinventory-web:${TAG:-latest}
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy

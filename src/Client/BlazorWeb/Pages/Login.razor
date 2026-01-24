@@ -106,6 +106,18 @@
                     </div>
                 </div>
             </div>
+
+            <MudDivider Class="my-4" />
+
+            <div class="register-store-section">
+                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="mb-2">
+                    Want to create your own store?
+                </MudText>
+                <MudButton Href="/register-store" Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+                    StartIcon="@Icons.Material.Filled.Store">
+                    Register New Store
+                </MudButton>
+            </div>
         </MudPaper>
     </div>
 </div>
@@ -237,6 +249,10 @@
         font-size: 13px;
         color: #64748b;
         font-family: monospace;
+    }
+
+    .register-store-section {
+        text-align: center;
     }
 
     /* Fix floating label background to cut through border */

@@ -8,6 +8,8 @@ using SellerInventory.Application.Interfaces;
 using SellerInventory.Infrastructure.Auth;
 using SellerInventory.Infrastructure.Data;
 using SellerInventory.Infrastructure.Repositories;
+using SellerInventory.Infrastructure.Storage;
+using SellerInventory.Infrastructure.Tenancy;
 
 namespace SellerInventory.Infrastructure;
 
@@ -15,18 +17,38 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // Database configuration - PostgreSQL only (NEON for production)
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Data Source=sellerinventory.db";
+            ?? "Host=localhost;Port=5432;Database=sellerinventory;Username=postgres;Password=password";
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite(connectionString));
+        {
+            options.UseNpgsql(connectionString);
+        });
 
+        // Repositories
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
+        // Tenant context (scoped per request)
+        services.AddScoped<ITenantContext, TenantContext>();
+
+        // Auth services
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
 
+        // Storage service - supports both Local (dev) and GoogleCloud (production)
+        var storageProvider = configuration.GetValue<string>("StorageProvider") ?? "Local";
+        if (storageProvider.Equals("GoogleCloud", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSingleton<IStorageService, GoogleCloudStorageService>();
+        }
+        else
+        {
+            services.AddSingleton<IStorageService, LocalStorageService>();
+        }
+
+        // JWT Authentication
         var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!";
 

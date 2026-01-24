@@ -1,5 +1,5 @@
 @page "/categories"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Manager,SystemAdmin")]
 @implements IDisposable
 
 <PageTitle>@L["Categories"] - SellerInventory</PageTitle>

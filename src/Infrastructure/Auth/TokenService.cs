@@ -28,7 +28,7 @@ public class TokenService : ITokenService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
@@ -36,6 +36,12 @@ public class TokenService : ITokenService
             new Claim(ClaimTypes.Role, user.Role.ToString()),
             new Claim("FullName", user.FullName)
         };
+
+        // Add StoreId claim if user belongs to a store
+        if (user.StoreId.HasValue)
+        {
+            claims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
+        }
 
         var token = new JwtSecurityToken(
             issuer: issuer,

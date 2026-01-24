@@ -16,60 +16,93 @@ public static class DbInitializer
 
         await context.Database.MigrateAsync();
 
+        // Create default store for development
+        Store? demoStore = null;
+        if (!await context.Stores.AnyAsync())
+        {
+            demoStore = new Store
+            {
+                Name = "Demo Store",
+                Slug = "demo-store",
+                Location = "New York",
+                Address = "123 Demo Street, NY 10001",
+                Industry = "Retail",
+                Currency = "USD",
+                IsActive = true,
+                SubscriptionStatus = SubscriptionStatus.Active,
+                SubscriptionExpiresAt = DateTime.UtcNow.AddYears(1),
+                ContactEmail = "contact@demostore.com",
+                ContactPhone = "+1-555-123-4567"
+            };
+
+            await context.Stores.AddAsync(demoStore);
+            await context.SaveChangesAsync();
+        }
+        else
+        {
+            demoStore = await context.Stores.FirstAsync();
+        }
+
         if (!await context.Users.AnyAsync())
         {
-            var adminUser = new User
+            // SystemAdmin - not tied to any store
+            var systemAdmin = new User
             {
-                Username = "admin",
-                Email = "admin@sellerinventory.com",
-                PasswordHash = passwordHasher.Hash("Admin@123"),
+                Username = "sysadmin",
+                Email = "sysadmin@sellerinventory.com",
+                PasswordHash = passwordHasher.Hash("SysAdmin@123"),
                 FullName = "System Administrator",
-                Role = UserRole.Admin,
+                Role = UserRole.SystemAdmin,
+                StoreId = null, // SystemAdmin has no store
                 IsActive = true
             };
 
+            // Manager - tied to demo store
             var managerUser = new User
             {
                 Username = "manager",
-                Email = "manager@sellerinventory.com",
+                Email = "manager@demostore.com",
                 PasswordHash = passwordHasher.Hash("Manager@123"),
                 FullName = "Store Manager",
                 Role = UserRole.Manager,
+                StoreId = demoStore.Id,
                 IsActive = true
             };
 
+            // Staff - tied to demo store
             var staffUser = new User
             {
                 Username = "staff",
-                Email = "staff@sellerinventory.com",
+                Email = "staff@demostore.com",
                 PasswordHash = passwordHasher.Hash("Staff@123"),
                 FullName = "Staff User",
                 Role = UserRole.Staff,
+                StoreId = demoStore.Id,
                 IsActive = true
             };
 
-            await context.Users.AddRangeAsync(adminUser, managerUser, staffUser);
+            await context.Users.AddRangeAsync(systemAdmin, managerUser, staffUser);
+            await context.SaveChangesAsync();
         }
 
         if (!await context.Categories.AnyAsync())
         {
             var categories = new List<Category>
             {
-                new() { Name = "Electronics", Description = "Electronic devices and accessories" },
-                new() { Name = "Clothing", Description = "Apparel and fashion items" },
-                new() { Name = "Food & Beverages", Description = "Food items and drinks" },
-                new() { Name = "Home & Garden", Description = "Home improvement and garden supplies" }
+                new() { Name = "Electronics", Description = "Electronic devices and accessories", StoreId = demoStore.Id },
+                new() { Name = "Clothing", Description = "Apparel and fashion items", StoreId = demoStore.Id },
+                new() { Name = "Food & Beverages", Description = "Food items and drinks", StoreId = demoStore.Id },
+                new() { Name = "Home & Garden", Description = "Home improvement and garden supplies", StoreId = demoStore.Id }
             };
 
             await context.Categories.AddRangeAsync(categories);
+            await context.SaveChangesAsync();
         }
-
-        await context.SaveChangesAsync();
 
         if (!await context.Products.AnyAsync())
         {
-            var electronicsCategory = await context.Categories.FirstAsync(c => c.Name == "Electronics");
-            var clothingCategory = await context.Categories.FirstAsync(c => c.Name == "Clothing");
+            var electronicsCategory = await context.Categories.FirstAsync(c => c.Name == "Electronics" && c.StoreId == demoStore.Id);
+            var clothingCategory = await context.Categories.FirstAsync(c => c.Name == "Clothing" && c.StoreId == demoStore.Id);
 
             var products = new List<Product>
             {
@@ -81,7 +114,8 @@ public static class DbInitializer
                     CostPrice = 15.00m,
                     SellPrice = 29.99m,
                     StockQuantity = 100,
-                    CategoryId = electronicsCategory.Id
+                    CategoryId = electronicsCategory.Id,
+                    StoreId = demoStore.Id
                 },
                 new()
                 {
@@ -91,7 +125,8 @@ public static class DbInitializer
                     CostPrice = 25.00m,
                     SellPrice = 49.99m,
                     StockQuantity = 50,
-                    CategoryId = electronicsCategory.Id
+                    CategoryId = electronicsCategory.Id,
+                    StoreId = demoStore.Id
                 },
                 new()
                 {
@@ -101,7 +136,8 @@ public static class DbInitializer
                     CostPrice = 8.00m,
                     SellPrice = 19.99m,
                     StockQuantity = 200,
-                    CategoryId = clothingCategory.Id
+                    CategoryId = clothingCategory.Id,
+                    StoreId = demoStore.Id
                 }
             };
 

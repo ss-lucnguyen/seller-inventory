@@ -1,6 +1,8 @@
+using SellerInventory.Domain.Interfaces;
+
 namespace SellerInventory.Domain.Entities;
 
-public class Product : BaseEntity
+public class Product : BaseEntity, ITenantEntity
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
@@ -13,6 +15,10 @@ public class Product : BaseEntity
 
     public Guid CategoryId { get; set; }
     public Category Category { get; set; } = null!;
+
+    // Store relationship (multi-tenant)
+    public Guid StoreId { get; set; }
+    public Store Store { get; set; } = null!;
 
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

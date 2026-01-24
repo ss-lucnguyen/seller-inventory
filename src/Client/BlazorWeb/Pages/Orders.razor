@@ -18,13 +18,22 @@ else
                 <MudText Typo="Typo.h6">@L["OrderList"]</MudText>
                 <MudSpacer />
                 <MudTextField @bind-Value="_searchString" Placeholder="@L["SearchOrders"]" Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                    AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
             </ToolBarContent>
             <HeaderContent>
-                <MudTh><MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.OrderNumber)">@L["OrderNumber"]</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.OrderDate)">@L["Date"]</MudTableSortLabel></MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.OrderNumber)">@L["OrderNumber"]
+                    </MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.OrderDate)">@L["Date"]
+                    </MudTableSortLabel>
+                </MudTh>
                 <MudTh>@L["Items"]</MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.Total)">@L["Total"]</MudTableSortLabel></MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<OrderResponse, object>(x => x.Total)">@L["Total"]
+                    </MudTableSortLabel>
+                </MudTh>
                 <MudTh>@L["Status"]</MudTh>
                 <AuthorizeView Roles="Admin" Context="authContext">
                     <MudTh Style="width: 200px;">@L["Actions"]</MudTh>
@@ -40,19 +49,23 @@ else
                 </MudTd>
                 <MudTd DataLabel="@L["Items"]">
                     <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => ShowOrderDetails(context))">
-                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@context.Items.Count @L["Items"]</MudChip>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@context.Items.Count @L["Items"]
+                        </MudChip>
                     </MudButton>
                 </MudTd>
                 <MudTd DataLabel="@L["Total"]">
-                    <MudText Typo="Typo.body1" Color="Color.Success" Style="font-weight: 600;">@Lang.FormatCurrency(context.Total)</MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Success" Style="font-weight: 600;">
+                        @Lang.FormatCurrency(context.Total)</MudText>
                 </MudTd>
                 <MudTd DataLabel="@L["Status"]">
-                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">@GetLocalizedStatus(context.Status)</MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">
+                        @GetLocalizedStatus(context.Status)</MudChip>
                 </MudTd>
-                <AuthorizeView Roles="Admin" Context="authContext">
+                <AuthorizeView Roles="SystemAdmin,Manager" Context="authContext">
                     <MudTd DataLabel="@L["Actions"]">
-                        <MudSelect T="string" Value="@context.Status" ValueChanged="@(value => UpdateStatus(context.Id, value))"
-                                   Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
+                        <MudSelect T="string" Value="@context.Status"
+                            ValueChanged="@(value => UpdateStatus(context.Id, value))" Variant="Variant.Outlined"
+                            Dense="true" Margin="Margin.Dense">
                             <MudSelectItem Value="@("Pending")">@L["Pending"]</MudSelectItem>
                             <MudSelectItem Value="@("Confirmed")">@L["Confirmed"]</MudSelectItem>
                             <MudSelectItem Value="@("Completed")">@L["Completed"]</MudSelectItem>
@@ -208,7 +221,7 @@ else
     {
         Lang.OnLanguageChanged += OnLanguageChanged;
         var state = await AuthState;
-        _isAdmin = state.User.IsInRole("Admin");
+        _isAdmin = state.User.IsInRole("SystemAdmin") || state.User.IsInRole("Manager");
         await LoadData();
     }
 
@@ -216,8 +229,8 @@ else
     {
         _isLoading = true;
         _orders = _isAdmin
-            ? await OrderService.GetAllAsync()
-            : await OrderService.GetMyOrdersAsync();
+        ? await OrderService.GetAllAsync()
+        : await OrderService.GetMyOrdersAsync();
         _isLoading = false;
     }
 

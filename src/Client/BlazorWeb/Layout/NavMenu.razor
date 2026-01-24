@@ -7,15 +7,11 @@
     <MudNavLink Href="pos" Icon="@Icons.Material.Filled.PointOfSale">
         @GetText("POS")
     </MudNavLink>
-    <AuthorizeView Roles="Admin,Manager">
+    <AuthorizeView Roles="Manager,SystemAdmin">
         <Authorized>
             <MudNavLink Href="products" Icon="@Icons.Material.Filled.Inventory2">
                 @GetText("Products")
             </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
-    <AuthorizeView Roles="Admin">
-        <Authorized>
             <MudNavLink Href="categories" Icon="@Icons.Material.Filled.Category">
                 @GetText("Categories")
             </MudNavLink>

@@ -1,0 +1,171 @@
+@page "/register-store"
+@layout LoginLayout
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILocalizationService L
+
+<PageTitle>@L["RegisterStore"] - SellerInventory</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-8">
+    <MudPaper Elevation="4" Class="pa-8">
+        <MudStack Spacing="4">
+            <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-2">@L["RegisterStore"]</MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="mb-4">
+                @L["CreateYourStoreDescription"]
+            </MudText>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.h6" Class="mt-4">@L["StoreInformation"]</MudText>
+
+            <MudTextField @bind-Value="_model.StoreName" Label="@L["StoreName"]" Variant="Variant.Outlined"
+                Required="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Store" />
+
+            <MudTextField @bind-Value="_model.StoreSlug" Label="@L["StoreSlug"]" Variant="Variant.Outlined"
+                Required="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Link"
+                HelperText="@L["StoreSlugHelper"]" />
+
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_model.Location" Label="@L["Location"]" Variant="Variant.Outlined"
+                        Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.LocationOn" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="_model.Industry" Label="@L["Industry"]" Variant="Variant.Outlined">
+                        <MudSelectItem Value="@("Retail")">Retail</MudSelectItem>
+                        <MudSelectItem Value="@("Restaurant")">Restaurant</MudSelectItem>
+                        <MudSelectItem Value="@("Fashion")">Fashion</MudSelectItem>
+                        <MudSelectItem Value="@("Electronics")">Electronics</MudSelectItem>
+                        <MudSelectItem Value="@("Grocery")">Grocery</MudSelectItem>
+                        <MudSelectItem Value="@("Other")">Other</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <MudTextField @bind-Value="_model.Address" Label="@L["Address"]" Variant="Variant.Outlined"
+                Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Home" />
+
+            <MudDivider Class="my-4" />
+
+            <MudText Typo="Typo.h6">@L["OwnerInformation"]</MudText>
+
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_model.OwnerUsername" Label="@L["Username"]" Variant="Variant.Outlined"
+                        Required="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_model.OwnerFullName" Label="@L["FullName"]" Variant="Variant.Outlined"
+                        Required="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Badge" />
+                </MudItem>
+            </MudGrid>
+
+            <MudTextField @bind-Value="_model.OwnerEmail" Label="@L["Email"]" Variant="Variant.Outlined"
+                Required="true" InputType="InputType.Email"
+                Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Email" />
+
+            <MudTextField @bind-Value="_model.OwnerPassword" Label="@L["Password"]" Variant="Variant.Outlined"
+                Required="true" InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                Adornment="Adornment.End" AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                OnAdornmentClick="() => _showPassword = !_showPassword" />
+
+            <MudTextField @bind-Value="_confirmPassword" Label="@L["ConfirmPassword"]" Variant="Variant.Outlined"
+                Required="true" InputType="@(_showPassword ? InputType.Text : InputType.Password)" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true"
+                OnClick="HandleRegister" Disabled="_isLoading" Class="mt-4">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                @L["RegisterStore"]
+            </MudButton>
+
+            <MudDivider Class="my-4" />
+
+            <MudText Typo="Typo.body2" Align="Align.Center">
+                @L["AlreadyHaveAccount"]
+                <MudLink Href="/login" Color="Color.Primary">@L["Login"]</MudLink>
+            </MudText>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private RegisterStoreModel _model = new();
+    private string _confirmPassword = string.Empty;
+    private bool _isLoading;
+    private bool _showPassword;
+
+    private async Task HandleRegister()
+    {
+        if (string.IsNullOrWhiteSpace(_model.StoreName) ||
+            string.IsNullOrWhiteSpace(_model.StoreSlug) ||
+            string.IsNullOrWhiteSpace(_model.OwnerUsername) ||
+            string.IsNullOrWhiteSpace(_model.OwnerEmail) ||
+            string.IsNullOrWhiteSpace(_model.OwnerPassword) ||
+            string.IsNullOrWhiteSpace(_model.OwnerFullName))
+        {
+            Snackbar.Add(L["PleaseInputAllFields"], Severity.Warning);
+            return;
+        }
+
+        if (_model.OwnerPassword != _confirmPassword)
+        {
+            Snackbar.Add(L["PasswordsDoNotMatch"], Severity.Warning);
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var request = new RegisterStoreRequest(
+                _model.StoreName,
+                _model.StoreSlug,
+                _model.Location,
+                _model.Address,
+                _model.Industry,
+                "USD",
+                _model.OwnerUsername,
+                _model.OwnerEmail,
+                _model.OwnerPassword,
+                _model.OwnerFullName
+            );
+
+            var result = await AuthService.RegisterStoreAsync(request);
+
+            if (result != null)
+            {
+                Snackbar.Add(L["StoreRegisteredSuccessfully"], Severity.Success);
+                Navigation.NavigateTo("/", true);
+            }
+            else
+            {
+                Snackbar.Add(L["RegistrationFailed"], Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private class RegisterStoreModel
+    {
+        public string StoreName { get; set; } = string.Empty;
+        public string StoreSlug { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string? Address { get; set; }
+        public string? Industry { get; set; }
+        public string OwnerUsername { get; set; } = string.Empty;
+        public string OwnerEmail { get; set; } = string.Empty;
+        public string OwnerPassword { get; set; } = string.Empty;
+        public string OwnerFullName { get; set; } = string.Empty;
+    }
+}

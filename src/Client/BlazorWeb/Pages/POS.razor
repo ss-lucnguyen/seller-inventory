@@ -247,6 +247,10 @@
 
             if (order is not null)
             {
+                // Auto-complete the order after successful creation (optional)
+                // Uncomment the next 2 lines if you want orders to be automatically completed
+                // await OrderService.UpdateStatusAsync(order.Id, new UpdateOrderStatusRequest("Completed"));
+                
                 _message = $"{L["OrderCompleted"]} {order.OrderNumber}";
                 _isSuccess = true;
                 _cartItems.Clear();

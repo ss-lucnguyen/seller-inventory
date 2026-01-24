@@ -5,5 +5,7 @@ public record LoginResponse(
     string Username,
     string FullName,
     string Role,
+    Guid? StoreId,
+    string? StoreName,
     DateTime ExpiresAt
 );

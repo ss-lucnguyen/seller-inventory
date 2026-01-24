@@ -1,8 +1,9 @@
 using SellerInventory.Domain.Enums;
+using SellerInventory.Domain.Interfaces;
 
 namespace SellerInventory.Domain.Entities;
 
-public class Order : BaseEntity
+public class Order : BaseEntity, ITenantEntity
 {
     public string OrderNumber { get; set; } = string.Empty;
     public DateTime OrderDate { get; set; } = DateTime.UtcNow;
@@ -15,6 +16,10 @@ public class Order : BaseEntity
 
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
+
+    // Store relationship (multi-tenant)
+    public Guid StoreId { get; set; }
+    public Store Store { get; set; } = null!;
 
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 

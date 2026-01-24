@@ -1,0 +1,223 @@
+@page "/accept-invitation"
+@layout LoginLayout
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILocalizationService L
+
+<PageTitle>@L["AcceptInvitation"] - SellerInventory</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-8">
+    <MudPaper Elevation="4" Class="pa-8">
+        @if (_isLoading)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+                <MudText Typo="Typo.body1">@L["ValidatingInvitation"]...</MudText>
+            </MudStack>
+        }
+        else if (_invitation is null)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Size="Size.Large" Style="font-size: 4rem;" />
+                <MudText Typo="Typo.h5" Align="Align.Center">@L["InvalidInvitation"]</MudText>
+                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                    @_errorMessage
+                </MudText>
+                <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary">
+                    @L["BackToLogin"]
+                </MudButton>
+            </MudStack>
+        }
+        else if (_invitation.IsUsed)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Warning" Size="Size.Large" Style="font-size: 4rem;" />
+                <MudText Typo="Typo.h5" Align="Align.Center">@L["InvitationAlreadyUsed"]</MudText>
+                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                    @L["InvitationAlreadyUsedMessage"]
+                </MudText>
+                <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary">
+                    @L["BackToLogin"]
+                </MudButton>
+            </MudStack>
+        }
+        else if (_invitation.ExpiresAt < DateTime.UtcNow)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Warning" Size="Size.Large" Style="font-size: 4rem;" />
+                <MudText Typo="Typo.h5" Align="Align.Center">@L["InvitationExpired"]</MudText>
+                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                    @L["InvitationExpiredMessage"]
+                </MudText>
+                <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary">
+                    @L["BackToLogin"]
+                </MudButton>
+            </MudStack>
+        }
+        else
+        {
+            <MudStack Spacing="4">
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Color="Color.Primary" Size="Size.Large" Style="font-size: 3rem;" />
+                    <MudText Typo="Typo.h5" Align="Align.Center">@L["JoinStore"]</MudText>
+                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                        @L["YouHaveBeenInvitedTo"] <strong>@_invitation.StoreName</strong>
+                    </MudText>
+                </MudStack>
+
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.body2"><strong>@L["Email"]:</strong> @_invitation.Email</MudText>
+                        <MudText Typo="Typo.body2"><strong>@L["Role"]:</strong> @_invitation.Role</MudText>
+                        <MudText Typo="Typo.body2"><strong>@L["ExpiresAt"]:</strong> @_invitation.ExpiresAt.ToLocalTime().ToString("g")</MudText>
+                    </MudStack>
+                </MudAlert>
+
+                <MudDivider Class="my-2" />
+
+                <MudText Typo="Typo.h6">@L["CreateYourAccount"]</MudText>
+
+                <MudTextField @bind-Value="_model.Username" Label="@L["Username"]" Variant="Variant.Outlined"
+                    Required="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" />
+
+                <MudTextField @bind-Value="_model.FullName" Label="@L["FullName"]" Variant="Variant.Outlined"
+                    Required="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Badge" />
+
+                <MudTextField @bind-Value="_model.Password" Label="@L["Password"]" Variant="Variant.Outlined"
+                    Required="true" InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                    Adornment="Adornment.End" AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                    OnAdornmentClick="() => _showPassword = !_showPassword" />
+
+                <MudTextField @bind-Value="_confirmPassword" Label="@L["ConfirmPassword"]" Variant="Variant.Outlined"
+                    Required="true" InputType="@(_showPassword ? InputType.Text : InputType.Password)" />
+
+                @if (!string.IsNullOrEmpty(_submitError))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">@_submitError</MudAlert>
+                }
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true"
+                    OnClick="HandleAccept" Disabled="_isSubmitting" Class="mt-2">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    @L["AcceptInvitation"]
+                </MudButton>
+
+                <MudDivider Class="my-2" />
+
+                <MudText Typo="Typo.body2" Align="Align.Center">
+                    @L["AlreadyHaveAccount"]
+                    <MudLink Href="/login" Color="Color.Primary">@L["Login"]</MudLink>
+                </MudText>
+            </MudStack>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    private InvitationResponse? _invitation;
+    private AcceptInvitationModel _model = new();
+    private string _confirmPassword = string.Empty;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private bool _showPassword;
+    private string? _errorMessage;
+    private string? _submitError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Token))
+        {
+            _errorMessage = L["NoInvitationToken"];
+            _isLoading = false;
+            return;
+        }
+
+        try
+        {
+            _invitation = await AuthService.ValidateInvitationAsync(Token);
+            if (_invitation is null)
+            {
+                _errorMessage = L["InvitationNotFound"];
+            }
+        }
+        catch (Exception)
+        {
+            _errorMessage = L["ErrorValidatingInvitation"];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleAccept()
+    {
+        _submitError = null;
+
+        if (string.IsNullOrWhiteSpace(_model.Username) ||
+            string.IsNullOrWhiteSpace(_model.Password) ||
+            string.IsNullOrWhiteSpace(_model.FullName))
+        {
+            _submitError = L["PleaseInputAllFields"];
+            return;
+        }
+
+        if (_model.Password != _confirmPassword)
+        {
+            _submitError = L["PasswordsDoNotMatch"];
+            return;
+        }
+
+        if (_model.Password.Length < 6)
+        {
+            _submitError = L["PasswordTooShort"];
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var request = new AcceptInvitationRequest(
+                Token!,
+                _model.Username,
+                _model.Password,
+                _model.FullName
+            );
+
+            var result = await AuthService.AcceptInvitationAsync(request);
+
+            if (result is not null)
+            {
+                Snackbar.Add(L["WelcomeToStore"] + " " + _invitation!.StoreName + "!", Severity.Success);
+                Navigation.NavigateTo("/", true);
+            }
+            else
+            {
+                _submitError = L["FailedToAcceptInvitation"];
+            }
+        }
+        catch (Exception ex)
+        {
+            _submitError = $"{L["Error"]}: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private class AcceptInvitationModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+    }
+}

@@ -1,8 +1,8 @@
 @page "/products"
-@attribute [Authorize(Roles = "Admin,Manager")]
+@attribute [Authorize(Roles = "Manager,SystemAdmin")]
 @implements IDisposable
 
-<PageTitle>@L["Products"] - SellerInventory</PageTitle>
+<PageTitle>@L["Products"] - Seller Inventory</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4">
     <div class="d-flex justify-space-between align-center mb-4">
@@ -435,7 +435,8 @@
                     _formModel.SellPrice,
                     _formModel.StockQuantity,
                     _formModel.CategoryId,
-                    _formModel.IsActive
+                    _formModel.IsActive,
+                    _formModel.ImageUrl
                 );
                 await ProductService.UpdateAsync(_editingId.Value, request);
                 Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
@@ -449,7 +450,8 @@
                     _formModel.CostPrice,
                     _formModel.SellPrice,
                     _formModel.StockQuantity,
-                    _formModel.CategoryId
+                    _formModel.CategoryId,
+                    _formModel.ImageUrl
                 );
                 await ProductService.CreateAsync(request);
                 Snackbar.Add(L["SuccessfullySaved"], Severity.Success);

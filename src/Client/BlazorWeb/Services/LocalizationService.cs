@@ -128,6 +128,8 @@ public class LocalizationService : ILocalizationService
                 { "Deactivate", "Deactivate" },
                 { "UserManagement", "User Management" },
                 { "Created", "Created" },
+                { "UserIsActive", "Active" },
+                { "UserInactive", "Inactive" },
 
                 // Import
                 { "ImportProducts", "Import Products" },
@@ -166,6 +168,56 @@ public class LocalizationService : ILocalizationService
                 { "QuantitySold", "Quantity Sold" },
                 { "Revenue", "Revenue" },
                 { "NoSalesToday", "No sales recorded today" },
+
+                // Store Registration
+                { "RegisterStore", "Register Store" },
+                { "CreateYourStoreDescription", "Create your store and start managing your inventory" },
+                { "StoreInformation", "Store Information" },
+                { "StoreName", "Store Name" },
+                { "StoreSlug", "Store URL Slug" },
+                { "StoreSlugHelper", "This will be your store's unique URL identifier" },
+                { "Location", "Location" },
+                { "Address", "Address" },
+                { "Industry", "Industry" },
+                { "OwnerInformation", "Owner Information" },
+                { "StoreRegisteredSuccessfully", "Store registered successfully!" },
+                { "RegistrationFailed", "Registration failed. Please try again." },
+                { "AlreadyHaveAccount", "Already have an account?" },
+                { "Login", "Login" },
+
+                // Invitations
+                { "InviteUser", "Invite User" },
+                { "InviteUserDescription", "Send an invitation email to add a new user to your store" },
+                { "SendInvitation", "Send Invitation" },
+                { "InvitationSentSuccessfully", "Invitation sent successfully!" },
+                { "FailedToSendInvitation", "Failed to send invitation" },
+                { "PleaseInputEmail", "Please enter an email address" },
+                { "Close", "Close" },
+                { "ExpiresAt", "Expires at" },
+
+                // Accept Invitation
+                { "AcceptInvitation", "Accept Invitation" },
+                { "ValidatingInvitation", "Validating invitation" },
+                { "InvalidInvitation", "Invalid Invitation" },
+                { "NoInvitationToken", "No invitation token provided" },
+                { "InvitationNotFound", "This invitation could not be found or has been revoked" },
+                { "ErrorValidatingInvitation", "An error occurred while validating the invitation" },
+                { "InvitationAlreadyUsed", "Invitation Already Used" },
+                { "InvitationAlreadyUsedMessage", "This invitation has already been used. Please log in with your account." },
+                { "InvitationExpired", "Invitation Expired" },
+                { "InvitationExpiredMessage", "This invitation has expired. Please ask the store manager to send a new invitation." },
+                { "JoinStore", "Join Store" },
+                { "YouHaveBeenInvitedTo", "You have been invited to join" },
+                { "CreateYourAccount", "Create Your Account" },
+                { "PasswordsDoNotMatch", "Passwords do not match" },
+                { "PasswordTooShort", "Password must be at least 6 characters" },
+                { "WelcomeToStore", "Welcome to" },
+                { "FailedToAcceptInvitation", "Failed to accept invitation. Please try again." },
+                { "BackToLogin", "Back to Login" },
+                { "PleaseInputAllFields", "Please fill in all required fields" },
+
+                // Roles
+                { "SystemAdmin", "System Admin" },
             }
         },
         {
@@ -284,6 +336,8 @@ public class LocalizationService : ILocalizationService
                 { "Deactivate", "Vô hiệu hóa" },
                 { "UserManagement", "Quản lý người dùng" },
                 { "Created", "Ngày tạo" },
+                { "UserIsActive", "Đang hoạt động" },
+                { "UserInactive", "Đã vô hiệu hóa" },
 
                 // Import
                 { "ImportProducts", "Nhập sản phẩm" },
@@ -322,6 +376,56 @@ public class LocalizationService : ILocalizationService
                 { "QuantitySold", "Số lượng bán" },
                 { "Revenue", "Doanh thu" },
                 { "NoSalesToday", "Không có bán hàng hôm nay" },
+
+                // Store Registration
+                { "RegisterStore", "Đăng ký cửa hàng" },
+                { "CreateYourStoreDescription", "Tạo cửa hàng và bắt đầu quản lý kho hàng của bạn" },
+                { "StoreInformation", "Thông tin cửa hàng" },
+                { "StoreName", "Tên cửa hàng" },
+                { "StoreSlug", "Mã URL cửa hàng" },
+                { "StoreSlugHelper", "Đây sẽ là mã định danh URL duy nhất của cửa hàng" },
+                { "Location", "Địa điểm" },
+                { "Address", "Địa chỉ" },
+                { "Industry", "Ngành nghề" },
+                { "OwnerInformation", "Thông tin chủ sở hữu" },
+                { "StoreRegisteredSuccessfully", "Đăng ký cửa hàng thành công!" },
+                { "RegistrationFailed", "Đăng ký thất bại. Vui lòng thử lại." },
+                { "AlreadyHaveAccount", "Đã có tài khoản?" },
+                { "Login", "Đăng nhập" },
+
+                // Invitations
+                { "InviteUser", "Mời người dùng" },
+                { "InviteUserDescription", "Gửi email mời để thêm người dùng mới vào cửa hàng của bạn" },
+                { "SendInvitation", "Gửi lời mời" },
+                { "InvitationSentSuccessfully", "Gửi lời mời thành công!" },
+                { "FailedToSendInvitation", "Gửi lời mời thất bại" },
+                { "PleaseInputEmail", "Vui lòng nhập địa chỉ email" },
+                { "Close", "Đóng" },
+                { "ExpiresAt", "Hết hạn lúc" },
+
+                // Accept Invitation
+                { "AcceptInvitation", "Chấp nhận lời mời" },
+                { "ValidatingInvitation", "Đang xác thực lời mời" },
+                { "InvalidInvitation", "Lời mời không hợp lệ" },
+                { "NoInvitationToken", "Không có mã lời mời" },
+                { "InvitationNotFound", "Không tìm thấy lời mời này hoặc đã bị thu hồi" },
+                { "ErrorValidatingInvitation", "Đã xảy ra lỗi khi xác thực lời mời" },
+                { "InvitationAlreadyUsed", "Lời mời đã được sử dụng" },
+                { "InvitationAlreadyUsedMessage", "Lời mời này đã được sử dụng. Vui lòng đăng nhập bằng tài khoản của bạn." },
+                { "InvitationExpired", "Lời mời đã hết hạn" },
+                { "InvitationExpiredMessage", "Lời mời này đã hết hạn. Vui lòng yêu cầu quản lý cửa hàng gửi lời mời mới." },
+                { "JoinStore", "Tham gia cửa hàng" },
+                { "YouHaveBeenInvitedTo", "Bạn đã được mời tham gia" },
+                { "CreateYourAccount", "Tạo tài khoản của bạn" },
+                { "PasswordsDoNotMatch", "Mật khẩu không khớp" },
+                { "PasswordTooShort", "Mật khẩu phải có ít nhất 6 ký tự" },
+                { "WelcomeToStore", "Chào mừng đến với" },
+                { "FailedToAcceptInvitation", "Chấp nhận lời mời thất bại. Vui lòng thử lại." },
+                { "BackToLogin", "Quay lại Đăng nhập" },
+                { "PleaseInputAllFields", "Vui lòng điền đầy đủ các trường bắt buộc" },
+
+                // Roles
+                { "SystemAdmin", "Quản trị viên hệ thống" },
             }
         }
     };

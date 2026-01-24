@@ -5,7 +5,6 @@ using SellerInventory.Application.Interfaces;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
-using ClosedXML.Excel;
 
 namespace SellerInventory.Api.Controllers;
 
@@ -15,10 +14,12 @@ namespace SellerInventory.Api.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
+    private readonly IStorageService _storageService;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(IProductService productService, IStorageService storageService)
     {
         _productService = productService;
+        _storageService = storageService;
     }
 
     [HttpGet]
@@ -47,7 +48,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto, CancellationToken cancellationToken)
     {
         try
@@ -62,7 +63,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto, CancellationToken cancellationToken)
     {
         try
@@ -77,7 +78,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         try
@@ -92,7 +93,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/stock")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> UpdateStock(Guid id, [FromBody] int quantity, CancellationToken cancellationToken)
     {
         try
@@ -107,7 +108,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("import")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Import([FromBody] IEnumerable<ImportProductDto> products, CancellationToken cancellationToken)
     {
         try
@@ -122,7 +123,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("upload-image")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> UploadImage([FromForm] IFormFile file, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
@@ -139,11 +140,8 @@ public class ProductsController : ControllerBase
 
         try
         {
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products");
-            Directory.CreateDirectory(uploadsFolder);
-
             var fileName = $"{Guid.NewGuid()}.jpg";
-            var filePath = Path.Combine(uploadsFolder, fileName);
+            var contentType = "image/jpeg";
 
             using (var memoryStream = new MemoryStream())
             {
@@ -164,12 +162,12 @@ public class ProductsController : ControllerBase
                     }
 
                     // Compress by adjusting JPEG quality
-                    using (var outputStream = System.IO.File.Create(filePath))
+                    using (var outputStream = new MemoryStream())
                     {
                         for (int quality = 85; quality >= 10; quality -= 5)
                         {
                             outputStream.SetLength(0);
-                            outputStream.Seek(0, SeekOrigin.Begin);
+                            outputStream.Position = 0;
 
                             var encoder = new JpegEncoder { Quality = quality };
                             await image.SaveAsync(outputStream, encoder, cancellationToken);
@@ -177,12 +175,14 @@ public class ProductsController : ControllerBase
                             if (outputStream.Length >= 300 * 1024 && outputStream.Length <= 500 * 1024)
                                 break;
                         }
+
+                        // Upload to Google Cloud Storage (or Local based on configuration)
+                        outputStream.Position = 0;
+                        var imageUrl = await _storageService.UploadImageAsync(outputStream, fileName, contentType, cancellationToken);
+                        return Ok(new { imageUrl });
                     }
                 }
             }
-
-            var imageUrl = $"/uploads/products/{fileName}";
-            return Ok(new { imageUrl });
         }
         catch (Exception ex)
         {
@@ -191,7 +191,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("import-excel")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> ImportExcel([FromForm] IFormFile file, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)

@@ -8,5 +8,6 @@ public record UpdateProductDto(
     decimal SellPrice,
     int StockQuantity,
     Guid CategoryId,
-    bool IsActive
+    bool IsActive,
+    string? ImageUrl = null
 );

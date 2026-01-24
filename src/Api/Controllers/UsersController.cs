@@ -8,7 +8,7 @@ namespace SellerInventory.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "SystemAdmin,Manager")]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;

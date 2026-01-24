@@ -7,24 +7,41 @@ namespace SellerInventory.Application.Services;
 public class ReportService : IReportService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ITenantContext _tenantContext;
 
-    public ReportService(IUnitOfWork unitOfWork)
+    public ReportService(IUnitOfWork unitOfWork, ITenantContext tenantContext)
     {
         _unitOfWork = unitOfWork;
+        _tenantContext = tenantContext;
     }
 
     public async Task<DailySalesReportDto> GetDailySalesAsync(DateTime date, CancellationToken cancellationToken = default)
     {
-        var startOfDay = date.Date;
+        if (!_tenantContext.HasStoreAccess)
+        {
+            throw new InvalidOperationException("User must belong to a store to view reports");
+        }
+
+        // Ensure date is UTC
+        var utcDate = date.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(date, DateTimeKind.Utc)
+            : date.ToUniversalTime();
+
+        var startOfDay = utcDate.Date;
         var endOfDay = startOfDay.AddDays(1);
 
-        var orders = await _unitOfWork.Orders.FindAsync(
-            o => o.OrderDate >= startOfDay && o.OrderDate < endOfDay && o.Status == OrderStatus.Completed,
-            cancellationToken);
+        var storeId = _tenantContext.CurrentStoreId ?? throw new InvalidOperationException("User must belong to a store to view reports");
+
+        var orders = (await _unitOfWork.Orders.FindAsync(
+            o => o.OrderDate >= startOfDay && o.OrderDate < endOfDay && o.Status == OrderStatus.Completed && o.StoreId == storeId,
+            cancellationToken)).ToList();
 
         var orderIds = orders.Select(o => o.Id).ToList();
-        var allOrderItems = await _unitOfWork.OrderItems.GetAllAsync(cancellationToken);
-        var orderItems = allOrderItems.Where(oi => orderIds.Contains(oi.OrderId)).ToList();
+
+        // Only get order items for the orders we found
+        var orderItems = orderIds.Count > 0
+            ? (await _unitOfWork.OrderItems.FindAsync(oi => orderIds.Contains(oi.OrderId), cancellationToken)).ToList()
+            : new List<Domain.Entities.OrderItem>();
 
         var totalOrders = orders.Count;
         var totalRevenue = orders.Sum(o => o.Total);
@@ -53,13 +70,32 @@ public class ReportService : IReportService
 
     public async Task<SalesSummaryDto> GetSalesSummaryAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
     {
-        var orders = await _unitOfWork.Orders.FindAsync(
-            o => o.OrderDate >= startDate && o.OrderDate <= endDate && o.Status == OrderStatus.Completed,
-            cancellationToken);
+        if (!_tenantContext.HasStoreAccess)
+        {
+            throw new InvalidOperationException("User must belong to a store to view reports");
+        }
+
+        // Ensure dates are UTC
+        var utcStartDate = startDate.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(startDate, DateTimeKind.Utc)
+            : startDate.ToUniversalTime();
+
+        var utcEndDate = endDate.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(endDate, DateTimeKind.Utc)
+            : endDate.ToUniversalTime();
+
+        var storeId = _tenantContext.CurrentStoreId ?? throw new InvalidOperationException("User must belong to a store to view reports");
+
+        var orders = (await _unitOfWork.Orders.FindAsync(
+            o => o.OrderDate >= utcStartDate && o.OrderDate <= utcEndDate && o.Status == OrderStatus.Completed && o.StoreId == storeId,
+            cancellationToken)).ToList();
 
         var orderIds = orders.Select(o => o.Id).ToList();
-        var allOrderItems = await _unitOfWork.OrderItems.GetAllAsync(cancellationToken);
-        var orderItems = allOrderItems.Where(oi => orderIds.Contains(oi.OrderId)).ToList();
+
+        // Only get order items for the orders we found
+        var orderItems = orderIds.Count > 0
+            ? (await _unitOfWork.OrderItems.FindAsync(oi => orderIds.Contains(oi.OrderId), cancellationToken)).ToList()
+            : new List<Domain.Entities.OrderItem>();
 
         var totalOrders = orders.Count;
         var totalRevenue = orders.Sum(o => o.Total);
@@ -67,8 +103,8 @@ public class ReportService : IReportService
         var totalProductsSold = orderItems.Sum(oi => oi.Quantity);
 
         return new SalesSummaryDto(
-            startDate,
-            endDate,
+            utcStartDate,
+            utcEndDate,
             totalOrders,
             totalRevenue,
             averageOrderValue,

@@ -7,10 +7,12 @@ namespace SellerInventory.Application.Services;
 public class ProductService : IProductService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ITenantContext _tenantContext;
 
-    public ProductService(IUnitOfWork unitOfWork)
+    public ProductService(IUnitOfWork unitOfWork, ITenantContext tenantContext)
     {
         _unitOfWork = unitOfWork;
+        _tenantContext = tenantContext;
     }
 
     public async Task<ProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -18,14 +20,35 @@ public class ProductService : IProductService
         var product = await _unitOfWork.Products.GetByIdAsync(id, cancellationToken);
         if (product is null) return null;
 
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && product.StoreId != _tenantContext.CurrentStoreId)
+        {
+            return null;
+        }
+
         var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, cancellationToken);
         return MapToDto(product, category?.Name ?? "Unknown");
     }
 
     public async Task<IReadOnlyList<ProductDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var products = await _unitOfWork.Products.GetAllAsync(cancellationToken);
-        var categories = await _unitOfWork.Categories.GetAllAsync(cancellationToken);
+        IReadOnlyList<Product> products;
+
+        if (_tenantContext.IsSystemAdmin)
+        {
+            products = await _unitOfWork.Products.GetAllAsync(cancellationToken);
+        }
+        else if (_tenantContext.CurrentStoreId.HasValue)
+        {
+            products = await _unitOfWork.Products.FindAsync(
+                p => p.StoreId == _tenantContext.CurrentStoreId.Value, cancellationToken);
+        }
+        else
+        {
+            return new List<ProductDto>();
+        }
+
+        var categories = await GetCategoriesForTenantAsync(cancellationToken);
         var categoryDict = categories.ToDictionary(c => c.Id, c => c.Name);
 
         return products.Select(p => MapToDto(p, categoryDict.GetValueOrDefault(p.CategoryId, "Unknown"))).ToList();
@@ -33,7 +56,22 @@ public class ProductService : IProductService
 
     public async Task<IReadOnlyList<ProductDto>> GetByCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
-        var products = await _unitOfWork.Products.FindAsync(p => p.CategoryId == categoryId, cancellationToken);
+        IReadOnlyList<Product> products;
+
+        if (_tenantContext.IsSystemAdmin)
+        {
+            products = await _unitOfWork.Products.FindAsync(p => p.CategoryId == categoryId, cancellationToken);
+        }
+        else if (_tenantContext.CurrentStoreId.HasValue)
+        {
+            products = await _unitOfWork.Products.FindAsync(
+                p => p.CategoryId == categoryId && p.StoreId == _tenantContext.CurrentStoreId.Value, cancellationToken);
+        }
+        else
+        {
+            return new List<ProductDto>();
+        }
+
         var category = await _unitOfWork.Categories.GetByIdAsync(categoryId, cancellationToken);
         var categoryName = category?.Name ?? "Unknown";
 
@@ -42,8 +80,19 @@ public class ProductService : IProductService
 
     public async Task<ProductDto> CreateAsync(CreateProductDto dto, CancellationToken cancellationToken = default)
     {
+        if (!_tenantContext.CurrentStoreId.HasValue)
+        {
+            throw new UnauthorizedAccessException("No store context available");
+        }
+
         var category = await _unitOfWork.Categories.GetByIdAsync(dto.CategoryId, cancellationToken)
             ?? throw new KeyNotFoundException($"Category with id {dto.CategoryId} not found");
+
+        // Verify category belongs to the same store
+        if (!_tenantContext.IsSystemAdmin && category.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("Category does not belong to your store");
+        }
 
         var product = new Product
         {
@@ -54,6 +103,8 @@ public class ProductService : IProductService
             SellPrice = dto.SellPrice,
             StockQuantity = dto.StockQuantity,
             CategoryId = dto.CategoryId,
+            ImageUrl = dto.ImageUrl,
+            StoreId = _tenantContext.CurrentStoreId.Value,
             IsActive = true
         };
 
@@ -68,8 +119,20 @@ public class ProductService : IProductService
         var product = await _unitOfWork.Products.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Product with id {id} not found");
 
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && product.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("Product does not belong to your store");
+        }
+
         var category = await _unitOfWork.Categories.GetByIdAsync(dto.CategoryId, cancellationToken)
             ?? throw new KeyNotFoundException($"Category with id {dto.CategoryId} not found");
+
+        // Verify category belongs to the same store
+        if (!_tenantContext.IsSystemAdmin && category.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("Category does not belong to your store");
+        }
 
         product.Name = dto.Name;
         product.Description = dto.Description;
@@ -79,6 +142,7 @@ public class ProductService : IProductService
         product.StockQuantity = dto.StockQuantity;
         product.CategoryId = dto.CategoryId;
         product.IsActive = dto.IsActive;
+        product.ImageUrl = dto.ImageUrl;
         product.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Products.UpdateAsync(product, cancellationToken);
@@ -92,6 +156,12 @@ public class ProductService : IProductService
         var product = await _unitOfWork.Products.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Product with id {id} not found");
 
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && product.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("Product does not belong to your store");
+        }
+
         await _unitOfWork.Products.DeleteAsync(product, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
@@ -100,6 +170,12 @@ public class ProductService : IProductService
     {
         var product = await _unitOfWork.Products.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Product with id {id} not found");
+
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && product.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("Product does not belong to your store");
+        }
 
         product.StockQuantity = quantity;
         product.UpdatedAt = DateTime.UtcNow;
@@ -110,22 +186,28 @@ public class ProductService : IProductService
 
     public async Task<IReadOnlyList<ImportResultDto>> ImportAsync(IEnumerable<ImportProductDto> products, CancellationToken cancellationToken = default)
     {
+        if (!_tenantContext.CurrentStoreId.HasValue)
+        {
+            throw new UnauthorizedAccessException("No store context available");
+        }
+
         var results = new List<ImportResultDto>();
         var productList = products.ToList();
+        var storeId = _tenantContext.CurrentStoreId.Value;
 
         try
         {
-            // Get or create categories
+            // Get or create categories for this store
             var categoryNames = productList.Select(p => p.CategoryName).Distinct().ToList();
             var existingCategories = await _unitOfWork.Categories.FindAsync(
-                c => categoryNames.Contains(c.Name), cancellationToken);
+                c => categoryNames.Contains(c.Name) && c.StoreId == storeId, cancellationToken);
 
             var existingCategoryDict = existingCategories.ToDictionary(c => c.Name, c => c.Id);
             var newCategories = new List<Category>();
 
             foreach (var categoryName in categoryNames.Where(cn => !existingCategoryDict.ContainsKey(cn)))
             {
-                var category = new Category { Name = categoryName };
+                var category = new Category { Name = categoryName, StoreId = storeId };
                 newCategories.Add(category);
                 existingCategoryDict[categoryName] = category.Id;
             }
@@ -153,6 +235,7 @@ public class ProductService : IProductService
                         SellPrice = dto.SellPrice,
                         StockQuantity = dto.StockQuantity,
                         CategoryId = existingCategoryDict[dto.CategoryName],
+                        StoreId = storeId,
                         IsActive = true
                     };
 
@@ -176,6 +259,20 @@ public class ProductService : IProductService
         }
 
         return results.AsReadOnly();
+    }
+
+    private async Task<IReadOnlyList<Category>> GetCategoriesForTenantAsync(CancellationToken cancellationToken)
+    {
+        if (_tenantContext.IsSystemAdmin)
+        {
+            return await _unitOfWork.Categories.GetAllAsync(cancellationToken);
+        }
+        else if (_tenantContext.CurrentStoreId.HasValue)
+        {
+            return await _unitOfWork.Categories.FindAsync(
+                c => c.StoreId == _tenantContext.CurrentStoreId.Value, cancellationToken);
+        }
+        return new List<Category>();
     }
 
     private static ProductDto MapToDto(Product product, string categoryName) =>

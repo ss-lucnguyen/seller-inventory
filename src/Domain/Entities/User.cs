@@ -11,5 +11,9 @@ public class User : BaseEntity
     public UserRole Role { get; set; } = UserRole.Staff;
     public bool IsActive { get; set; } = true;
 
+    // Store relationship (nullable for SystemAdmin users)
+    public Guid? StoreId { get; set; }
+    public Store? Store { get; set; }
+
     public ICollection<Order> Orders { get; set; } = new List<Order>();
 }

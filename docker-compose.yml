@@ -1,42 +1,85 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sellerinventory-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sellerinventory_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sellerinventory-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
       dockerfile: src/Api/Dockerfile
     container_name: sellerinventory-api
     ports:
-      - "5001:80"
+      - "5001:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Data Source=/app/data/sellerinventory.db
+      - StorageProvider=Local
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=sellerinventory_dev;Username=postgres;Password=password
       - JwtSettings__SecretKey=${JWT_SECRET_KEY:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
       - JwtSettings__Issuer=SellerInventory
       - JwtSettings__Audience=SellerInventory
       - JwtSettings__ExpirationHours=24
+      - AllowedOrigins__0=http://localhost:5174
+      - AllowedOrigins__1=http://localhost:5173
     volumes:
-      - api-data:/app/data
+      - api-uploads:/app/wwwroot/uploads
     networks:
       - sellerinventory-network
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   web:
     build:
       context: .
       dockerfile: src/Client/BlazorWeb/Dockerfile
+      args:
+        - API_BASE_URL=http://localhost:5001
     container_name: sellerinventory-web
     ports:
       - "5174:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - sellerinventory-network
     restart: unless-stopped
 
+volumes:
+  postgres-data:
+  api-uploads:
+
+networks:
+  sellerinventory-network:
+    driver: bridge
 networks:
   sellerinventory-network:
     driver: bridge
 
 volumes:
   api-data:
+  api-uploads:

@@ -58,26 +58,44 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto> CreateAsync(CreateOrderDto dto, Guid userId, CancellationToken cancellationToken = default)
     {
+        if (dto.Items == null || dto.Items.Count == 0)
+        {
+            throw new InvalidOperationException("Order must contain at least one item");
+        }
+
         var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken)
             ?? throw new KeyNotFoundException($"User with id {userId} not found");
+
+        if (!user.StoreId.HasValue)
+        {
+            throw new InvalidOperationException("User must belong to a store to create an order");
+        }
 
         var order = new Order
         {
             OrderNumber = GenerateOrderNumber(),
             OrderDate = DateTime.UtcNow,
             Status = OrderStatus.Pending,
+            SubTotal = 0,
             Tax = dto.Tax,
             Discount = dto.Discount,
+            Total = 0,
             Notes = dto.Notes,
-            UserId = userId
+            UserId = userId,
+            StoreId = user.StoreId.Value
         };
 
-        await _unitOfWork.Orders.AddAsync(order, cancellationToken);
-
+        // Add order items to the collection first
         foreach (var itemDto in dto.Items)
         {
             var product = await _unitOfWork.Products.GetByIdAsync(itemDto.ProductId, cancellationToken)
                 ?? throw new KeyNotFoundException($"Product with id {itemDto.ProductId} not found");
+
+            // Ensure product belongs to the same store
+            if (product.StoreId != user.StoreId.Value)
+            {
+                throw new InvalidOperationException($"Product {product.Name} does not belong to your store");
+            }
 
             if (product.StockQuantity < itemDto.Quantity)
             {
@@ -86,22 +104,25 @@ public class OrderService : IOrderService
 
             var orderItem = new OrderItem
             {
-                OrderId = order.Id,
                 ProductId = product.Id,
                 ProductName = product.Name,
                 UnitPrice = product.SellPrice,
                 Quantity = itemDto.Quantity
             };
 
-            await _unitOfWork.OrderItems.AddAsync(orderItem, cancellationToken);
             order.OrderItems.Add(orderItem);
 
             product.StockQuantity -= itemDto.Quantity;
             await _unitOfWork.Products.UpdateAsync(product, cancellationToken);
         }
 
+        // Calculate totals
         order.CalculateTotal();
-        await _unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+
+        // Add order (with items) to context - EF Core will handle the relationships
+        await _unitOfWork.Orders.AddAsync(order, cancellationToken);
+
+        // Save everything in one transaction
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToDto(order, user.Username, order.OrderItems.ToList());
