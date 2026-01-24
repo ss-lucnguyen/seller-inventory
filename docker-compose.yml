@@ -76,10 +76,3 @@ volumes:
 networks:
   sellerinventory-network:
     driver: bridge
-networks:
-  sellerinventory-network:
-    driver: bridge
-
-volumes:
-  api-data:
-  api-uploads:
