@@ -1,0 +1,307 @@
+@page "/store-settings"
+@using SellerInventory.Shared.Contracts.Store
+@attribute [Authorize(Roles = "Manager,SystemAdmin")]
+@implements IDisposable
+
+<PageTitle>@L["StoreSettings"] - SellerInventory</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["StoreSettings"]</MudText>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else if (_store is null)
+{
+    <MudAlert Severity="Severity.Warning">@L["StoreNotFound"]</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                    @if (!string.IsNullOrEmpty(_store.LogoUrl))
+                    {
+                        <MudAvatar Size="Size.Large" Style="width: 120px; height: 120px;">
+                            <MudImage Src="@_store.LogoUrl" Alt="Store Logo" Style="width: 100%; height: 100%; object-fit: cover;" />
+                        </MudAvatar>
+                    }
+                    else
+                    {
+                        <MudAvatar Color="Color.Primary" Size="Size.Large" Style="width: 120px; height: 120px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Store" Size="Size.Large" />
+                        </MudAvatar>
+                    }
+                    <MudText Typo="Typo.h6">@_store.Name</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_store.Slug</MudText>
+
+                    <MudFileUpload T="IBrowserFile" Accept=".jpg,.jpeg,.png,.webp" MaximumFileCount="1"
+                                   FilesChanged="OnLogoSelected">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                                       Disabled="_isUploadingLogo">
+                                @if (_isUploadingLogo)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                }
+                                @L["UploadLogo"]
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Max 5MB (jpg, png, webp)</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudForm @ref="_form">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.h6" Class="mb-2">@L["StoreInformation"]</MudText>
+
+                        <MudTextField @bind-Value="_formModel.Name" Label="@L["StoreName"]"
+                                      Variant="Variant.Outlined" Required="true" />
+
+                        <MudTextField @bind-Value="_formModel.Description" Label="@L["Description"]"
+                                      Variant="Variant.Outlined" Lines="3" />
+
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">@L["ContactInformation"]</MudText>
+
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_formModel.ContactEmail" Label="@L["Email"]"
+                                              Variant="Variant.Outlined" InputType="InputType.Email" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_formModel.ContactPhone" Label="@L["Phone"]"
+                                              Variant="Variant.Outlined" InputType="InputType.Telephone" />
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">@L["LocationDetails"]</MudText>
+
+                        <MudTextField @bind-Value="_formModel.Address" Label="@L["Address"]"
+                                      Variant="Variant.Outlined" Lines="2" />
+
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_formModel.Location" Label="@L["Location"]"
+                                              Variant="Variant.Outlined"
+                                              HelperText="City, Country" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_formModel.Industry" Label="@L["Industry"]"
+                                              Variant="Variant.Outlined"
+                                              HelperText="e.g., Retail, Restaurant" />
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">@L["BusinessSettings"]</MudText>
+
+                        <MudSelect T="string" @bind-Value="_formModel.Currency" Label="@L["Currency"]"
+                                   Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("USD")">USD - US Dollar</MudSelectItem>
+                            <MudSelectItem Value="@("EUR")">EUR - Euro</MudSelectItem>
+                            <MudSelectItem Value="@("GBP")">GBP - British Pound</MudSelectItem>
+                            <MudSelectItem Value="@("VND")">VND - Vietnamese Dong</MudSelectItem>
+                            <MudSelectItem Value="@("JPY")">JPY - Japanese Yen</MudSelectItem>
+                            <MudSelectItem Value="@("CNY")">CNY - Chinese Yuan</MudSelectItem>
+                            <MudSelectItem Value="@("KRW")">KRW - Korean Won</MudSelectItem>
+                            <MudSelectItem Value="@("THB")">THB - Thai Baht</MudSelectItem>
+                            <MudSelectItem Value="@("SGD")">SGD - Singapore Dollar</MudSelectItem>
+                            <MudSelectItem Value="@("MYR")">MYR - Malaysian Ringgit</MudSelectItem>
+                        </MudSelect>
+
+                        <div class="d-flex justify-end gap-2 mt-4">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                       OnClick="ResetForm">@L["Reset"]</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="SaveChanges" Disabled="_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                }
+                                @L["SaveChanges"]
+                            </MudButton>
+                        </div>
+                    </MudStack>
+                </MudForm>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Inject] private IStoreSettingsService StoreSettingsService { get; set; } = default!;
+    [Inject] private IStoreContext StoreContext { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
+
+    private StoreResponse? _store;
+    private StoreFormModel _formModel = new();
+    private MudForm? _form;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _isUploadingLogo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Lang.OnLanguageChanged += OnLanguageChanged;
+        await LoadStore();
+    }
+
+    private async Task LoadStore()
+    {
+        _isLoading = true;
+        try
+        {
+            _store = await StoreSettingsService.GetCurrentStoreAsync();
+            if (_store is not null)
+            {
+                PopulateForm();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void PopulateForm()
+    {
+        if (_store is null) return;
+
+        _formModel = new StoreFormModel
+        {
+            Name = _store.Name,
+            Description = _store.Description,
+            Location = _store.Location,
+            Address = _store.Address,
+            Industry = _store.Industry,
+            ContactEmail = _store.ContactEmail,
+            ContactPhone = _store.ContactPhone,
+            Currency = _store.Currency ?? "USD"
+        };
+    }
+
+    private void ResetForm()
+    {
+        PopulateForm();
+        Snackbar.Add(L["FormReset"], Severity.Info);
+    }
+
+    private async Task SaveChanges()
+    {
+        if (string.IsNullOrWhiteSpace(_formModel.Name))
+        {
+            Snackbar.Add(L["StoreNameRequired"], Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var request = new UpdateStoreRequest(
+                _formModel.Name,
+                _formModel.Location,
+                _formModel.Address,
+                _formModel.Industry,
+                _formModel.Description,
+                _formModel.ContactEmail,
+                _formModel.ContactPhone,
+                _formModel.Currency
+            );
+
+            var result = await StoreSettingsService.UpdateStoreAsync(request);
+            if (result is not null)
+            {
+                _store = result;
+                await StoreContext.SetStoreContextAsync(_store.Id, _store.Name);
+                Snackbar.Add(L["StoreUpdatedSuccessfully"], Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(L["FailedToUpdateStore"], Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task OnLogoSelected(IBrowserFile file)
+    {
+        if (file is null) return;
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            Snackbar.Add(L["FileTooLarge"], Severity.Warning);
+            return;
+        }
+
+        _isUploadingLogo = true;
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Position = 0;
+
+            var logoUrl = await StoreSettingsService.UploadLogoAsync(ms, file.Name);
+            if (!string.IsNullOrEmpty(logoUrl))
+            {
+                _store = _store! with { LogoUrl = logoUrl };
+                Snackbar.Add(L["LogoUploadedSuccessfully"], Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(L["FailedToUploadLogo"], Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isUploadingLogo = false;
+        }
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private class StoreFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Location { get; set; }
+        public string? Address { get; set; }
+        public string? Industry { get; set; }
+        public string? ContactEmail { get; set; }
+        public string? ContactPhone { get; set; }
+        public string Currency { get; set; } = "USD";
+    }
+}

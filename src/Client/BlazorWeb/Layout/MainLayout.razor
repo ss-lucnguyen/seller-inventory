@@ -63,21 +63,31 @@
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
-                <MudDivider Class="my-2" />
-                <MudStack Class="pa-3" Spacing="1">
-                    @if (!string.IsNullOrEmpty(_storeName))
-                    {
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudIcon Icon="@Icons.Material.Filled.Store" Size="Size.Small" Color="Color.Primary" />
-                            <MudText Typo="Typo.body2" Color="Color.Primary">@_storeName</MudText>
+                <MudPaper Class="ma-3 pa-3" Elevation="0" Style="background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, var(--mud-palette-primary) 100%); border-radius: 12px;">
+                    <MudStack Spacing="2">
+                        @if (!string.IsNullOrEmpty(_storeName))
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudAvatar Color="Color.Surface" Size="Size.Small" Style="background: rgba(255,255,255,0.2);">
+                                    <MudIcon Icon="@Icons.Material.Filled.Store" Size="Size.Small" Style="color: white;" />
+                                </MudAvatar>
+                                <MudText Typo="Typo.subtitle2" Style="color: white; font-weight: 600;">@_storeName</MudText>
+                            </MudStack>
+                        }
+                        <MudDivider Style="border-color: rgba(255,255,255,0.2);" />
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudAvatar Color="Color.Secondary" Size="Size.Medium">
+                                @(context.User.Identity?.Name?.Substring(0, 1).ToUpper())
+                            </MudAvatar>
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2" Style="color: white; font-weight: 500;">@context.User.Identity?.Name</MudText>
+                                <MudChip T="string" Size="Size.Small" Style="background: rgba(255,255,255,0.2); color: white; font-size: 0.7rem; height: 20px;">
+                                    @context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                                </MudChip>
+                            </MudStack>
                         </MudStack>
-                    }
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@(_currentLanguage == Language.VIE ? "Đăng nhập với" : "Logged in as")</MudText>
-                    <MudText Typo="Typo.body2">@context.User.Identity?.Name</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        @context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
-                    </MudText>
-                </MudStack>
+                    </MudStack>
+                </MudPaper>
             </Authorized>
         </AuthorizeView>
     </MudDrawer>

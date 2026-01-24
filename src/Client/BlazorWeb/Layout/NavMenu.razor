@@ -7,6 +7,12 @@
     <MudNavLink Href="pos" Icon="@Icons.Material.Filled.PointOfSale">
         @GetText("POS")
     </MudNavLink>
+    <MudNavLink Href="orders" Icon="@Icons.Material.Filled.Receipt">
+        @GetText("Orders")
+    </MudNavLink>
+    <MudNavLink Href="reports" Icon="@Icons.Material.Filled.Assessment">
+        @GetText("Reports")
+    </MudNavLink>
     <AuthorizeView Roles="Manager,SystemAdmin">
         <Authorized>
             <MudNavLink Href="products" Icon="@Icons.Material.Filled.Inventory2">
@@ -18,14 +24,12 @@
             <MudNavLink Href="users" Icon="@Icons.Material.Filled.People">
                 @GetText("Users")
             </MudNavLink>
+            <MudNavLink Href="store-settings" Icon="@Icons.Material.Filled.Settings">
+                @GetText("StoreSettings")
+            </MudNavLink>
         </Authorized>
     </AuthorizeView>
-    <MudNavLink Href="orders" Icon="@Icons.Material.Filled.Receipt">
-        @GetText("Orders")
-    </MudNavLink>
-    <MudNavLink Href="reports" Icon="@Icons.Material.Filled.Assessment">
-        @GetText("Reports")
-    </MudNavLink>
+
 </MudNavMenu>
 
 @code {

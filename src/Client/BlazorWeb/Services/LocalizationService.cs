@@ -218,6 +218,25 @@ public class LocalizationService : ILocalizationService
 
                 // Roles
                 { "SystemAdmin", "System Admin" },
+
+                // Store Settings
+                { "StoreSettings", "Store Settings" },
+                { "StoreNotFound", "Store not found" },
+                { "ContactInformation", "Contact Information" },
+                { "Phone", "Phone" },
+                { "LocationDetails", "Location & Details" },
+                { "BusinessSettings", "Business Settings" },
+                { "Currency", "Currency" },
+                { "UploadLogo", "Upload Logo" },
+                { "Reset", "Reset" },
+                { "SaveChanges", "Save Changes" },
+                { "FormReset", "Form has been reset" },
+                { "StoreNameRequired", "Store name is required" },
+                { "StoreUpdatedSuccessfully", "Store updated successfully" },
+                { "FailedToUpdateStore", "Failed to update store" },
+                { "FileTooLarge", "File size must be less than 5MB" },
+                { "LogoUploadedSuccessfully", "Logo uploaded successfully" },
+                { "FailedToUploadLogo", "Failed to upload logo" },
             }
         },
         {
@@ -426,6 +445,25 @@ public class LocalizationService : ILocalizationService
 
                 // Roles
                 { "SystemAdmin", "Quản trị viên hệ thống" },
+
+                // Store Settings
+                { "StoreSettings", "Cài đặt cửa hàng" },
+                { "StoreNotFound", "Không tìm thấy cửa hàng" },
+                { "ContactInformation", "Thông tin liên hệ" },
+                { "Phone", "Điện thoại" },
+                { "LocationDetails", "Địa điểm & Chi tiết" },
+                { "BusinessSettings", "Cài đặt kinh doanh" },
+                { "Currency", "Tiền tệ" },
+                { "UploadLogo", "Tải lên Logo" },
+                { "Reset", "Đặt lại" },
+                { "SaveChanges", "Lưu thay đổi" },
+                { "FormReset", "Biểu mẫu đã được đặt lại" },
+                { "StoreNameRequired", "Tên cửa hàng là bắt buộc" },
+                { "StoreUpdatedSuccessfully", "Cập nhật cửa hàng thành công" },
+                { "FailedToUpdateStore", "Cập nhật cửa hàng thất bại" },
+                { "FileTooLarge", "Kích thước tệp phải nhỏ hơn 5MB" },
+                { "LogoUploadedSuccessfully", "Tải logo thành công" },
+                { "FailedToUploadLogo", "Tải logo thất bại" },
             }
         }
     };

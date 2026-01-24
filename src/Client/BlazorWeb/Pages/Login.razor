@@ -84,29 +84,6 @@
                 </MudStack>
             </EditForm>
 
-            <MudDivider Class="my-5" />
-
-            <div class="demo-credentials">
-                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-3" Align="Align.Center">
-                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
-                    Demo Credentials
-                </MudText>
-                <div class="credentials-grid">
-                    <div class="credential-item" @onclick='() => QuickLogin("admin", "Admin@123")'>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">Admin</MudChip>
-                        <span class="credential-text">admin / Admin@123</span>
-                    </div>
-                    <div class="credential-item" @onclick='() => QuickLogin("manager", "Manager@123")'>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Manager</MudChip>
-                        <span class="credential-text">manager / Manager@123</span>
-                    </div>
-                    <div class="credential-item" @onclick='() => QuickLogin("staff", "Staff@123")'>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">Staff</MudChip>
-                        <span class="credential-text">staff / Staff@123</span>
-                    </div>
-                </div>
-            </div>
-
             <MudDivider Class="my-4" />
 
             <div class="register-store-section">
@@ -216,41 +193,6 @@
         border-radius: 12px !important;
     }
 
-    .demo-credentials {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 16px;
-    }
-
-    .credentials-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .credential-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
-        background: white;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 1px solid #e2e8f0;
-    }
-
-    .credential-item:hover {
-        background: #f1f5f9;
-        border-color: #667eea;
-    }
-
-    .credential-text {
-        font-size: 13px;
-        color: #64748b;
-        font-family: monospace;
-    }
-
     .register-store-section {
         text-align: center;
     }
@@ -326,12 +268,6 @@
         {
             _isLoading = false;
         }
-    }
-
-    private void QuickLogin(string username, string password)
-    {
-        _loginModel.Username = username;
-        _loginModel.Password = password;
     }
 
     private class LoginModel
