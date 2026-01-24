@@ -22,15 +22,20 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 COPY --from=build /app/publish/wwwroot .
-COPY src/Client/BlazorWeb/nginx.conf /etc/nginx/nginx.conf
+COPY src/Client/BlazorWeb/nginx.conf.template /etc/nginx/nginx.conf.template
 
 # Security: run as non-root
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx && \
     touch /var/run/nginx.pid && \
     chown -R nginx:nginx /var/run/nginx.pid
 
+# Default port (Cloud Run will override via PORT env var)
+ENV PORT=80
+
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Use envsubst to replace PORT variable at runtime, then start nginx
+CMD sh -c "envsubst '\$PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"

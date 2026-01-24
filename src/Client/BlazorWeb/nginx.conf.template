@@ -1,0 +1,34 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    include mime.types;
+    types {
+        application/wasm wasm;
+    }
+
+    server {
+        listen ${PORT};
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        location / {
+            try_files $uri $uri/ /index.html =404;
+        }
+
+        location ~* \.(dll|pdb|wasm|blat|dat)$ {
+            add_header Cache-Control "no-cache";
+            types {
+                application/octet-stream dll pdb;
+                application/wasm wasm;
+                application/octet-stream blat;
+                application/octet-stream dat;
+            }
+        }
+
+        gzip on;
+        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm;
+    }
+}
