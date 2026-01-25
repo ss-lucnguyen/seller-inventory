@@ -56,6 +56,17 @@ ehthumbs.db
 .env.local
 .env.*.local
 
+# Sensitive configuration files (use *.template.json as reference)
+src/Api/appsettings.json
+src/Api/appsettings.Development.json
+src/Api/appsettings.Production.json
+src/Client/BlazorWeb/wwwroot/appsettings.json
+
+# Google Cloud credentials
+*.json.key
+*-credentials.json
+service-account*.json
+
 # Logs
 logs
 *.log

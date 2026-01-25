@@ -28,8 +28,8 @@ print_error() {
 # =====================================================
 # Configuration - Update these values
 # =====================================================
-GCP_PROJECT_ID="${GCP_PROJECT_ID:-your-gcp-project-id}"
-GCP_REGION="${GCP_REGION:-us-central1}"  # FREE TIER: us-central1, us-east1, us-west1 only
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-seller-inventory-485205}"
+GCP_REGION="${GCP_REGION:-us-east1}"  # FREE TIER: us-central1, us-east1, us-west1 only
 GCS_BUCKET_NAME="${GCS_BUCKET_NAME:-sellerinventory-images}"
 
 # Service names
@@ -136,6 +136,7 @@ build_and_push_images() {
     # Build API image
     print_step "Building API image: ${API_IMAGE}"
     docker build \
+        --platform linux/amd64 \
         -f src/Api/Dockerfile \
         -t ${API_IMAGE} \
         .
@@ -150,6 +151,7 @@ build_and_push_images() {
     # Build Web image with API URL
     print_step "Building Web image: ${WEB_IMAGE}"
     docker build \
+        --platform linux/amd64 \
         -f src/Client/BlazorWeb/Dockerfile \
         --build-arg API_BASE_URL=${API_URL} \
         -t ${WEB_IMAGE} \
@@ -196,12 +198,8 @@ create_secrets() {
 deploy_api() {
     print_step "Deploying API to Cloud Run..."
 
-    # Get service account email
-    SERVICE_ACCOUNT=$(gcloud iam service-accounts list --filter="displayName:Compute Engine default" --format="value(email)" | head -n1)
-
-    if [ -z "$SERVICE_ACCOUNT" ]; then
-        SERVICE_ACCOUNT="${GCP_PROJECT_ID}@appspot.gserviceaccount.com"
-    fi
+    # Use cloud-blob service account (has required permissions for secrets and storage)
+    SERVICE_ACCOUNT="cloud-blob@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
 
     gcloud run deploy ${API_SERVICE_NAME} \
         --image ${API_IMAGE} \
@@ -255,6 +253,7 @@ deploy_web() {
     # Rebuild web image with correct API URL
     print_step "Rebuilding Web image with API URL: ${API_URL}"
     docker build \
+        --platform linux/amd64 \
         -f src/Client/BlazorWeb/Dockerfile \
         --build-arg API_BASE_URL=${API_URL} \
         -t ${WEB_IMAGE} \
