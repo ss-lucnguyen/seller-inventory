@@ -23,7 +23,17 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>(options =>
         {
-            options.UseNpgsql(connectionString);
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+            {
+                // Enable retry on transient failures (NEON free tier can sleep)
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorCodesToAdd: null);
+
+                // Command timeout for slow wake-up
+                npgsqlOptions.CommandTimeout(60);
+            });
         });
 
         // Repositories

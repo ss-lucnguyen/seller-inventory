@@ -222,18 +222,30 @@ public class ProductsController : ControllerBase
                     {
                         try
                         {
+                            var name = row.Cell(2).GetString();
+                            var categoryName = row.Cell(3).GetString();
+                            var sku = row.Cell(4).GetString();
+
+                            // Parse numeric values safely
+                            decimal.TryParse(row.Cell(5).GetString(), out var sellPrice);
+                            decimal.TryParse(row.Cell(6).GetString(), out var costPrice);
+                            int.TryParse(row.Cell(7).GetString(), out var stockQuantity);
+
+                            if (string.IsNullOrWhiteSpace(name))
+                                continue;
+
                             var product = new ImportProductDto(
-                                Name: row.Cell(2).Value.ToString() ?? string.Empty,
+                                Name: name,
                                 Description: null,
-                                SKU: row.Cell(4).Value.ToString(),
-                                CostPrice: Convert.ToDecimal(row.Cell(6).Value),
-                                SellPrice: Convert.ToDecimal(row.Cell(5).Value),
-                                StockQuantity: Convert.ToInt32(row.Cell(7).Value),
-                                CategoryName: row.Cell(3).Value.ToString() ?? string.Empty
+                                SKU: sku,
+                                CostPrice: costPrice,
+                                SellPrice: sellPrice,
+                                StockQuantity: stockQuantity,
+                                CategoryName: categoryName
                             );
                             products.Add(product);
-                        }
-                        catch
+                        }      
+                        catch (Exception ex)     
                         {
                             // Skip invalid rows
                             continue;

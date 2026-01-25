@@ -386,11 +386,19 @@
         {
             _importError = null;
             _importResults.Clear();
+
+            // Read file immediately before any UI updates to avoid stale reference
+            using var stream = file.OpenReadStream(10 * 1024 * 1024); // 10MB max
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var fileData = ms.ToArray();
+            var fileName = file.Name;
+
             _isImporting = true;
             StateHasChanged();
 
-            // Send file to server API for import
-            var results = await ProductService.ImportExcelAsync(file);
+            // Send file data to server API for import
+            var results = await ProductService.ImportExcelAsync(fileData, fileName);
 
             if (results != null && results.Any())
             {

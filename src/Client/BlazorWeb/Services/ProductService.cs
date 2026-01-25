@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
-using Microsoft.AspNetCore.Components.Forms;
 using SellerInventory.Shared.Contracts.Product;
 
 namespace SellerInventory.Client.BlazorWeb.Services;
@@ -52,17 +51,12 @@ public class ProductService : IProductService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<IReadOnlyList<ImportResultResponse>?> ImportExcelAsync(IBrowserFile file)
+    public async Task<IReadOnlyList<ImportResultResponse>?> ImportExcelAsync(byte[] fileData, string fileName)
     {
         using var content = new MultipartFormDataContent();
-        using var stream = file.OpenReadStream(10 * 1024 * 1024); // 10MB max
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
-        ms.Position = 0;
-
-        var fileContent = new ByteArrayContent(ms.ToArray());
+        var fileContent = new ByteArrayContent(fileData);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        content.Add(fileContent, "file", file.Name);
+        content.Add(fileContent, "file", fileName);
 
         var response = await _httpClient.PostAsync($"{BaseUrl}/import-excel", content);
         if (!response.IsSuccessStatusCode)
