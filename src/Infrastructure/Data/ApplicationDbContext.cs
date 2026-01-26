@@ -16,6 +16,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<Customer> Customers => Set<Customer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,12 +112,30 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // Customer configuration
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.StoreId);
+            entity.HasIndex(e => e.AccountNumber).IsUnique();
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Mobile).HasMaxLength(20);
+            entity.Property(e => e.AccountNumber).HasMaxLength(50);
+            entity.Property(e => e.Address).HasMaxLength(500);
+
+            entity.HasOne(e => e.Store)
+                .WithMany(s => s.Customers)
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // Order configuration
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.OrderNumber).IsUnique();
             entity.HasIndex(e => e.StoreId);
+            entity.HasIndex(e => e.CustomerId);
             entity.Property(e => e.OrderNumber).HasMaxLength(50).IsRequired();
             entity.Property(e => e.SubTotal).HasPrecision(18, 2);
             entity.Property(e => e.Tax).HasPrecision(18, 2);
@@ -126,6 +146,11 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.User)
                 .WithMany(u => u.Orders)
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Customer)
+                .WithMany(c => c.Orders)
+                .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Store)
@@ -150,6 +175,33 @@ public class ApplicationDbContext : DbContext
                 .WithMany(p => p.OrderItems)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Invoice configuration
+        modelBuilder.Entity<Invoice>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.InvoiceNumber).IsUnique();
+            entity.HasIndex(e => e.StoreId);
+            entity.HasIndex(e => e.OrderId).IsUnique();
+            entity.Property(e => e.InvoiceNumber).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.SubTotal).HasPrecision(18, 2);
+            entity.Property(e => e.Tax).HasPrecision(18, 2);
+            entity.Property(e => e.Discount).HasPrecision(18, 2);
+            entity.Property(e => e.Total).HasPrecision(18, 2);
+            entity.Property(e => e.AmountPaid).HasPrecision(18, 2);
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Ignore(e => e.AmountDue);
+
+            entity.HasOne(e => e.Order)
+                .WithOne(o => o.Invoice)
+                .HasForeignKey<Invoice>(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Store)
+                .WithMany(s => s.Invoices)
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

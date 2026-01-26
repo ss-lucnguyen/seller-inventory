@@ -128,6 +128,12 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponseDto> RegisterStoreAsync(RegisterStoreRequestDto request, CancellationToken cancellationToken = default)
     {
+        // Maximum store limit check can be added here if needed
+        var countStore = await _unitOfWork.Stores.CountAsync(cancellationToken);
+        if (countStore >= 3)
+        {
+            throw new InvalidOperationException("Maximum store limit reached!");
+        }
         // Check if store slug already exists
         var existingStores = await _unitOfWork.Stores.FindAsync(s => s.Slug == request.StoreSlug, cancellationToken);
         if (existingStores.Any())

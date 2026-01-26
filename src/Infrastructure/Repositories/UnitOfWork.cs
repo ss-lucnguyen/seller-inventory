@@ -14,6 +14,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Product>? _products;
     private IRepository<Order>? _orders;
     private IRepository<OrderItem>? _orderItems;
+    private IRepository<Invoice>? _invoices;
+    private IRepository<Customer>? _customers;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -27,6 +29,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Product> Products => _products ??= new Repository<Product>(_context);
     public IRepository<Order> Orders => _orders ??= new Repository<Order>(_context);
     public IRepository<OrderItem> OrderItems => _orderItems ??= new Repository<OrderItem>(_context);
+    public IRepository<Invoice> Invoices => _invoices ??= new Repository<Invoice>(_context);
+    public IRepository<Customer> Customers => _customers ??= new Repository<Customer>(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

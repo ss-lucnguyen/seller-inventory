@@ -1,0 +1,224 @@
+@page "/customers"
+@attribute [Authorize(Roles = "Manager,SystemAdmin")]
+@implements IDisposable
+
+<PageTitle>@L["Customers"] - SellerInventory</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">@L["Customers"]</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="ShowAddModal">@L["AddCustomer"]</MudButton>
+</div>
+
+@if (_customers == null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudPaper Elevation="2">
+        <MudDataGrid Items="_customers" Hover="true" Dense="true" Striped="true">
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="@L["CustomerName"]" />
+                <PropertyColumn Property="x => x.AccountNumber" Title="@L["AccountNumber"]" />
+                <TemplateColumn Title="@L["Gender"]">
+                    <CellTemplate>
+                        @L[context.Item.Gender.ToString()]
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.Mobile" Title="@L["Mobile"]" />
+                <PropertyColumn Property="x => x.Address" Title="@L["Address"]" />
+                <TemplateColumn Title="@L["Status"]">
+                    <CellTemplate>
+                        @if (context.Item.IsDefault)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">@L["Default"]</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="@(context.Item.IsActive ? Color.Success : Color.Error)">
+                                @(context.Item.IsActive ? L["IsActive"] : L["Inactive"])
+                            </MudChip>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="@L["Actions"]">
+                    <CellTemplate>
+                        @if (!context.Item.IsDefault)
+                        {
+                            <MudStack Row Spacing="1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                    OnClick="() => ShowEditModal(context.Item)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                    OnClick="() => DeleteCustomer(context.Item.Id)" />
+                            </MudStack>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="CustomerResponse" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudPaper>
+}
+
+<!-- Add/Edit Customer Dialog -->
+<MudDialog @bind-Visible="_showModal" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_isEditing ? L["Edit"] + " " + L["Customer"] : L["AddCustomer"])</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_formModel.Name" Label="@L["CustomerName"]" Variant="Variant.Outlined" Required="true" />
+            <MudSelect T="string" @bind-Value="_formModel.Gender" Label="@L["Gender"]" Variant="Variant.Outlined">
+                @foreach (var gender in _genderOptions)
+                {
+                    <MudSelectItem Value="@gender">@L[gender]</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField @bind-Value="_formModel.Mobile" Label="@L["Mobile"]" Variant="Variant.Outlined" />
+            <MudTextField @bind-Value="_formModel.Address" Label="@L["Address"]" Variant="Variant.Outlined" Lines="2" />
+            @if (_isEditing)
+            {
+                <MudCheckBox T="bool" @bind-Value="_formModel.IsActive" Label="@L["IsActive"]" />
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseModal" Color="Color.Default">@L["Cancel"]</MudButton>
+        <MudButton OnClick="SaveCustomer" Variant="Variant.Filled" Color="Color.Primary">@L["Save"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject] private ICustomerService CustomerService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
+
+    private IReadOnlyList<CustomerResponse>? _customers;
+    private bool _showModal;
+    private bool _isEditing;
+    private Guid? _editingId;
+    private CustomerFormModel _formModel = new();
+    private DialogOptions _dialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Small };
+    private readonly string[] _genderOptions = { "Unknown", "Male", "Female", "Other" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Lang.OnLanguageChanged += OnLanguageChanged;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _customers = await CustomerService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        _formModel = new CustomerFormModel();
+        _isEditing = false;
+        _editingId = null;
+        _showModal = true;
+    }
+
+    private void ShowEditModal(CustomerResponse customer)
+    {
+        _formModel = new CustomerFormModel
+        {
+            Name = customer.Name,
+            Gender = customer.Gender,
+            Mobile = customer.Mobile,
+            Address = customer.Address,
+            IsActive = customer.IsActive
+        };
+        _isEditing = true;
+        _editingId = customer.Id;
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+    }
+
+    private async Task SaveCustomer()
+    {
+        try
+        {
+            if (_isEditing && _editingId.HasValue)
+            {
+                var request = new UpdateCustomerRequest(_formModel.Name, _formModel.Gender, _formModel.Mobile, _formModel.Address, _formModel.IsActive);
+                await CustomerService.UpdateAsync(_editingId.Value, request);
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
+            }
+            else
+            {
+                var request = new CreateCustomerRequest(_formModel.Name, _formModel.Gender, _formModel.Mobile, _formModel.Address);
+                await CustomerService.CreateAsync(request);
+                Snackbar.Add(L["SuccessfullySaved"], Severity.Success);
+            }
+
+            _showModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteCustomer(Guid id)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>();
+        parameters.Add(x => x.ContentText, L["DeleteConfirm"]);
+        parameters.Add(x => x.ButtonText, L["Delete"]);
+        parameters.Add(x => x.Color, Color.Error);
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["Delete"], parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            try
+            {
+                await CustomerService.DeleteAsync(id);
+                Snackbar.Add(L["SuccessfullyDeleted"], Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"{L["Error"]}: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private class CustomerFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Gender { get; set; } = "Unknown";
+        public string? Mobile { get; set; }
+        public string? Address { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}

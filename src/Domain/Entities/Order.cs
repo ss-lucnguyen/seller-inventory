@@ -17,11 +17,18 @@ public class Order : BaseEntity, ITenantEntity
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
 
+    // Customer relationship
+    public Guid CustomerId { get; set; }
+    public Customer Customer { get; set; } = null!;
+
     // Store relationship (multi-tenant)
     public Guid StoreId { get; set; }
     public Store Store { get; set; } = null!;
 
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+    // Invoice relationship (1:1)
+    public Invoice? Invoice { get; set; }
 
     public void CalculateTotal()
     {

@@ -12,6 +12,8 @@ public record OrderResponse(
     string? Notes,
     Guid UserId,
     string UserName,
+    Guid CustomerId,
+    string CustomerName,
     IReadOnlyList<OrderItemResponse> Items,
     DateTime CreatedAt,
     DateTime UpdatedAt

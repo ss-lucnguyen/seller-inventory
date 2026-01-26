@@ -9,27 +9,57 @@ public class UserService : IUserService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITenantContext _tenantContext;
 
-    public UserService(IUnitOfWork unitOfWork, IPasswordHasher passwordHasher)
+    public UserService(IUnitOfWork unitOfWork, IPasswordHasher passwordHasher, ITenantContext tenantContext)
     {
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
+        _tenantContext = tenantContext;
     }
 
     public async Task<UserListDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
-        return user is null ? null : MapToDto(user);
+        if (user is null) return null;
+
+        // Verify tenant access (SystemAdmin can access all, others only their store)
+        if (!_tenantContext.IsSystemAdmin && user.StoreId != _tenantContext.CurrentStoreId)
+        {
+            return null;
+        }
+
+        return MapToDto(user);
     }
 
     public async Task<IReadOnlyList<UserListDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var users = await _unitOfWork.Users.GetAllAsync(cancellationToken);
+        IReadOnlyList<User> users;
+
+        if (_tenantContext.IsSystemAdmin)
+        {
+            users = await _unitOfWork.Users.GetAllAsync(cancellationToken);
+        }
+        else if (_tenantContext.CurrentStoreId.HasValue)
+        {
+            users = await _unitOfWork.Users.FindAsync(
+                u => u.StoreId == _tenantContext.CurrentStoreId.Value, cancellationToken);
+        }
+        else
+        {
+            return new List<UserListDto>();
+        }
+
         return users.Select(MapToDto).ToList();
     }
 
     public async Task<UserListDto> CreateAsync(CreateUserDto dto, CancellationToken cancellationToken = default)
     {
+        if (!_tenantContext.IsSystemAdmin && !_tenantContext.CurrentStoreId.HasValue)
+        {
+            throw new UnauthorizedAccessException("No store context available");
+        }
+
         var existingUsers = await _unitOfWork.Users.FindAsync(
             u => u.Username == dto.Username || u.Email == dto.Email,
             cancellationToken);
@@ -46,7 +76,8 @@ public class UserService : IUserService
             PasswordHash = _passwordHasher.Hash(dto.Password),
             FullName = dto.FullName,
             Role = Enum.Parse<UserRole>(dto.Role, true),
-            IsActive = true
+            IsActive = true,
+            StoreId = _tenantContext.CurrentStoreId
         };
 
         await _unitOfWork.Users.AddAsync(user, cancellationToken);
@@ -59,6 +90,12 @@ public class UserService : IUserService
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"User with id {id} not found");
+
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && user.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("User does not belong to your store");
+        }
 
         var existingUsers = await _unitOfWork.Users.FindAsync(
             u => u.Email == dto.Email && u.Id != id,
@@ -85,6 +122,12 @@ public class UserService : IUserService
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"User with id {id} not found");
+
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && user.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("User does not belong to your store");
+        }
 
         await _unitOfWork.Users.DeleteAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -114,6 +157,12 @@ public class UserService : IUserService
         var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"User with id {id} not found");
 
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && user.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("User does not belong to your store");
+        }
+
         user.PasswordHash = _passwordHasher.Hash(dto.NewPassword);
         user.UpdatedAt = DateTime.UtcNow;
 
@@ -125,6 +174,12 @@ public class UserService : IUserService
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"User with id {id} not found");
+
+        // Verify tenant access
+        if (!_tenantContext.IsSystemAdmin && user.StoreId != _tenantContext.CurrentStoreId)
+        {
+            throw new UnauthorizedAccessException("User does not belong to your store");
+        }
 
         user.IsActive = !user.IsActive;
         user.UpdatedAt = DateTime.UtcNow;

@@ -23,4 +23,6 @@ public class Store : BaseEntity
     public ICollection<Product> Products { get; set; } = new List<Product>();
     public ICollection<Category> Categories { get; set; } = new List<Category>();
     public ICollection<Order> Orders { get; set; } = new List<Order>();
+    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public ICollection<Customer> Customers { get; set; } = new List<Customer>();
 }

@@ -1,5 +1,6 @@
 @page "/login"
 @layout LoginLayout
+@implements IDisposable
 
 <div class="login-wrapper">
     <div class="login-left">
@@ -32,8 +33,8 @@
                 <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mb-3">
                     <MudIcon Icon="@Icons.Material.Filled.Person" />
                 </MudAvatar>
-                <MudText Typo="Typo.h5" Class="mb-1" Style="font-weight: 600;">Welcome Back</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Sign in to continue to your dashboard</MudText>
+                <MudText Typo="Typo.h5" Class="mb-1" Style="font-weight: 600;">@L["WelcomeBack"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["SignInToContinue"]</MudText>
             </div>
 
             @if (!string.IsNullOrEmpty(_errorMessage))
@@ -47,7 +48,7 @@
                 <DataAnnotationsValidator />
                 <MudStack Spacing="4" Class="login-fields">
                     <MudTextField @bind-Value="_loginModel.Username"
-                        Label="Username"
+                        Label="@L["Username"]"
                         Variant="Variant.Outlined"
                         Adornment="Adornment.Start"
                         AdornmentIcon="@Icons.Material.Filled.Person"
@@ -55,7 +56,7 @@
                         Required="true" />
 
                     <MudTextField @bind-Value="_loginModel.Password"
-                        Label="Password"
+                        Label="@L["Password"]"
                         InputType="InputType.Password"
                         Variant="Variant.Outlined"
                         Adornment="Adornment.Start"
@@ -73,12 +74,12 @@
                         @if (_isLoading)
                         {
                             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                            <span>Signing in...</span>
+                            <span>@L["SigningIn"]</span>
                         }
                         else
                         {
                             <MudIcon Icon="@Icons.Material.Filled.Login" Class="mr-2" />
-                            <span>Sign In</span>
+                            <span>@L["SignIn"]</span>
                         }
                     </MudButton>
                 </MudStack>
@@ -88,11 +89,11 @@
 
             <div class="register-store-section">
                 <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="mb-2">
-                    Want to create your own store?
+                    @L["WantToCreateStore"]
                 </MudText>
                 <MudButton Href="/register-store" Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
                     StartIcon="@Icons.Material.Filled.Store">
-                    Register New Store
+                    @L["RegisterNewStore"]
                 </MudButton>
             </div>
         </MudPaper>
@@ -236,10 +237,27 @@
 @code {
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
+    [Inject] private ILanguageService LanguageService { get; set; } = default!;
 
     private LoginModel _loginModel = new();
     private string? _errorMessage;
     private bool _isLoading;
+
+    protected override void OnInitialized()
+    {
+        LanguageService.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LanguageService.OnLanguageChanged -= OnLanguageChanged;
+    }
 
     private async Task HandleLogin()
     {
@@ -257,12 +275,12 @@
             }
             else
             {
-                _errorMessage = "Invalid username or password";
+                _errorMessage = L["InvalidCredentials"];
             }
         }
         catch (Exception)
         {
-            _errorMessage = "An error occurred. Please try again.";
+            _errorMessage = L["LoginError"];
         }
         finally
         {

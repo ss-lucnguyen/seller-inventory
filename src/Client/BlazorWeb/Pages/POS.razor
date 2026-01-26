@@ -72,6 +72,19 @@
                 }
             </div>
 
+            <div class="pa-3" style="border-bottom: 1px solid #eee;">
+                <MudSelect T="Guid?" @bind-Value="_selectedCustomerId" Label="@L["Customer"]"
+                           Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense"
+                           AnchorOrigin="Origin.BottomCenter">
+                    @foreach (var customer in _customers.Where(c => c.IsActive))
+                    {
+                        <MudSelectItem Value="@((Guid?)customer.Id)">
+                            @(customer.IsDefault ? L["Anonymous"] : customer.Name)
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+
             <div style="flex: 1; overflow-y: auto; padding: 1rem;">
                 @if (_cartItems.Any())
                 {
@@ -151,14 +164,17 @@
     [Inject] private IProductService ProductService { get; set; } = default!;
     [Inject] private ICategoryService CategoryService { get; set; } = default!;
     [Inject] private IOrderService OrderService { get; set; } = default!;
+    [Inject] private ICustomerService CustomerService { get; set; } = default!;
     [Inject] private ILanguageService Lang { get; set; } = default!;
     [Inject] private ILocalizationService L { get; set; } = default!;
 
     private IReadOnlyList<ProductResponse> _products = new List<ProductResponse>();
     private IReadOnlyList<ProductResponse> _filteredProducts = new List<ProductResponse>();
     private IReadOnlyList<CategoryResponse> _categories = new List<CategoryResponse>();
+    private IReadOnlyList<CustomerResponse> _customers = new List<CustomerResponse>();
     private List<CartItem> _cartItems = new();
     private Guid? _selectedCategoryId;
+    private Guid? _selectedCustomerId;
     private decimal _subtotal;
     private decimal _tax;
     private decimal _total;
@@ -171,7 +187,15 @@
         Lang.OnLanguageChanged += OnLanguageChanged;
         _products = await ProductService.GetAllAsync();
         _categories = await CategoryService.GetAllAsync();
+        _customers = await CustomerService.GetAllAsync();
         _filteredProducts = _products;
+
+        // Set default customer as selected
+        var defaultCustomer = _customers.FirstOrDefault(c => c.IsDefault);
+        if (defaultCustomer != null)
+        {
+            _selectedCustomerId = defaultCustomer.Id;
+        }
     }
 
     private void OnCategoryChanged(Guid? categoryId)
@@ -242,7 +266,7 @@
         try
         {
             var items = _cartItems.Select(i => new CreateOrderItemRequest(i.ProductId, i.Quantity)).ToList();
-            var request = new CreateOrderRequest(items, _tax, 0, null);
+            var request = new CreateOrderRequest(items, _tax, 0, null, _selectedCustomerId);
             var order = await OrderService.CreateAsync(request);
 
             if (order is not null)

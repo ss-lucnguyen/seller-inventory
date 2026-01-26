@@ -12,6 +12,8 @@ public record OrderDto(
     string? Notes,
     Guid UserId,
     string UserName,
+    Guid CustomerId,
+    string CustomerName,
     IReadOnlyList<OrderItemDto> Items,
     DateTime CreatedAt,
     DateTime UpdatedAt

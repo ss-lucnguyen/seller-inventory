@@ -1,0 +1,426 @@
+@page "/invoices"
+@attribute [Authorize(Roles = "SystemAdmin,Manager")]
+@implements IDisposable
+
+<PageTitle>Invoices - SellerInventory</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["Invoices"]</MudText>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+}
+else
+{
+    <MudPaper Elevation="2" class="inv-page">
+        <MudTable Items="_invoices" Hover="true" Striped="true" Filter="new Func<InvoiceResponse, bool>(FilterFunc)">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">@L["InvoiceList"]</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchString" Placeholder="@L["SearchInvoices"]" Adornment="Adornment.Start"
+                    AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<InvoiceResponse, object>(x => x.InvoiceNumber)">@L["InvoiceNumber"]</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<InvoiceResponse, object>(x => x.InvoiceDate)">@L["Date"]</MudTableSortLabel>
+                </MudTh>
+                <MudTh>@L["Order"]</MudTh>
+                <MudTh>@L["Customer"]</MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<InvoiceResponse, object>(x => x.Total)">@L["Total"]</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<InvoiceResponse, object>(x => x.AmountPaid)">@L["AmountPaid"]</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<InvoiceResponse, object>(x => x.AmountDue)">@L["AmountDue"]</MudTableSortLabel>
+                </MudTh>
+                <MudTh>@L["Status"]</MudTh>
+                <MudTh Style="width: 200px;">@L["Actions"]</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="@L["InvoiceNumber"]">
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.InvoiceNumber</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["Date"]">
+                    <MudText Typo="Typo.body2">@Lang.FormatDate(context.InvoiceDate)</MudText>
+                    @if (context.DueDate.HasValue)
+                    {
+                        <MudText Typo="Typo.caption" Color="@(context.DueDate < DateTime.Now && context.PaymentStatus != "Paid" ? Color.Error : Color.Secondary)">
+                            @L["Due"]: @Lang.FormatDate(context.DueDate.Value)
+                        </MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="@L["Order"]">
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.OrderNumber</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["Customer"]">
+                    <MudText Typo="Typo.body2">@context.CustomerName</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["Total"]">
+                    <MudText Typo="Typo.body1" Style="font-weight: 600;">@Lang.FormatCurrency(context.Total)</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["AmountPaid"]">
+                    <MudText Typo="Typo.body2" Color="Color.Success">@Lang.FormatCurrency(context.AmountPaid)</MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["AmountDue"]">
+                    <MudText Typo="Typo.body2" Color="@(context.AmountDue > 0 ? Color.Warning : Color.Success)">
+                        @Lang.FormatCurrency(context.AmountDue)
+                    </MudText>
+                </MudTd>
+                <MudTd DataLabel="@L["Status"]">
+                    <MudChip T="string" Size="Size.Small" Color="@GetPaymentStatusColor(context.PaymentStatus)">
+                        @GetLocalizedPaymentStatus(context.PaymentStatus)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="@L["Actions"]">
+                    <MudButtonGroup Size="Size.Small" Variant="Variant.Text">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" OnClick="@(() => ShowInvoiceDetails(context))" Title="@L["ViewDetails"]" Disabled="@_isProcessing" />
+                        @if (context.PaymentStatus != "Paid")
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Payment" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenPaymentDialog(context))" Title="@L["RecordPayment"]" Disabled="@_isProcessing" />
+                            <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" OnClick="@(() => MarkAsPaid(context.Id))" Title="@L["MarkAsPaid"]" Disabled="@_isProcessing" />
+                        }
+                        @if (context.AmountPaid == 0)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteInvoice(context.Id))" Title="@L["Delete"]" Disabled="@_isProcessing" />
+                        }
+                    </MudButtonGroup>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Align="Align.Center" Class="pa-4">@L["NoInvoices"]</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+}
+
+<!-- Invoice Details Dialog -->
+<MudDialog @bind-Visible="_showDetailsModal" Options="_detailsDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["InvoiceDetails"] - @_selectedInvoice?.InvoiceNumber</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_selectedInvoice != null)
+        {
+            <MudStack Spacing="3">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudStack Spacing="1">
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceNumber"]:</MudText>
+                                <MudText Typo="Typo.body2" Style="font-family: monospace; font-weight: 600;">@_selectedInvoice.InvoiceNumber</MudText>
+                            </MudStack>
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["OrderNumber"]:</MudText>
+                                <MudText Typo="Typo.body2" Style="font-family: monospace;">@_selectedInvoice.OrderNumber</MudText>
+                            </MudStack>
+                            @if (_selectedOrder != null)
+                            {
+                                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Customer"]:</MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@_selectedOrder.CustomerName</MudText>
+                                </MudStack>
+                            }
+                        </MudStack>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudStack Spacing="1" Style="text-align: right;">
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceDate"]:</MudText>
+                                <MudText Typo="Typo.body2">@Lang.FormatDate(_selectedInvoice.InvoiceDate)</MudText>
+                            </MudStack>
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["DueDate"]:</MudText>
+                                <MudText Typo="Typo.body2">@(_selectedInvoice.DueDate.HasValue ? Lang.FormatDate(_selectedInvoice.DueDate.Value) : "-")</MudText>
+                            </MudStack>
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Status"]:</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@GetPaymentStatusColor(_selectedInvoice.PaymentStatus)">
+                                    @GetLocalizedPaymentStatus(_selectedInvoice.PaymentStatus)
+                                </MudChip>
+                            </MudStack>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+                <MudDivider Class="my-2" />
+
+                @if (_selectedOrder != null && _selectedOrder.Items.Count > 0)
+                {
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">@L["OrderItems"]</MudText>
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true" Style="border-radius: 4px;">
+                        <thead>
+                            <tr style="background-color: var(--mud-palette-background-grey);">
+                                <th style="text-align: left;">@L["ProductName"]</th>
+                                <th style="text-align: center; width: 80px;">@L["Quantity"]</th>
+                                <th style="text-align: right; width: 120px;">@L["UnitPrice"]</th>
+                                <th style="text-align: right; width: 120px;">@L["Total"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in _selectedOrder.Items)
+                            {
+                                <tr>
+                                    <td>@item.ProductName</td>
+                                    <td style="text-align: center;">@item.Quantity</td>
+                                    <td style="text-align: right;">@Lang.FormatCurrency(item.UnitPrice)</td>
+                                    <td style="text-align: right; font-weight: 600;">@Lang.FormatCurrency(item.TotalPrice)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudStack Spacing="1">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.body2">@L["Subtotal"]</MudText>
+                            <MudText Typo="Typo.body2">@Lang.FormatCurrency(_selectedInvoice.SubTotal)</MudText>
+                        </MudStack>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.body2">@L["Tax"]</MudText>
+                            <MudText Typo="Typo.body2">@Lang.FormatCurrency(_selectedInvoice.Tax)</MudText>
+                        </MudStack>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.body2">@L["Discount"]</MudText>
+                            <MudText Typo="Typo.body2">-@Lang.FormatCurrency(_selectedInvoice.Discount)</MudText>
+                        </MudStack>
+                        <MudDivider Class="my-2" />
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@L["Total"]</MudText>
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@Lang.FormatCurrency(_selectedInvoice.Total)</MudText>
+                        </MudStack>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.body2" Color="Color.Success">@L["AmountPaid"]</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Success">@Lang.FormatCurrency(_selectedInvoice.AmountPaid)</MudText>
+                        </MudStack>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.subtitle1" Color="@(_selectedInvoice.AmountDue > 0 ? Color.Error : Color.Success)" Style="font-weight: 600;">@L["AmountDue"]</MudText>
+                            <MudText Typo="Typo.subtitle1" Color="@(_selectedInvoice.AmountDue > 0 ? Color.Error : Color.Success)" Style="font-weight: 600;">@Lang.FormatCurrency(_selectedInvoice.AmountDue)</MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+
+                @if (!string.IsNullOrEmpty(_selectedInvoice.Notes))
+                {
+                    <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Notes"]</MudText>
+                        <MudText Typo="Typo.body2">@_selectedInvoice.Notes</MudText>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDetailsModal" Color="Color.Default">@L["Close"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<!-- Record Payment Dialog -->
+<MudDialog @bind-Visible="_showPaymentDialog" Options="_paymentDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["RecordPayment"]</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_selectedInvoice != null)
+        {
+            <MudStack Spacing="3">
+                <MudText>@L["Invoice"]: @_selectedInvoice.InvoiceNumber</MudText>
+                <MudText>@L["Total"]: @Lang.FormatCurrency(_selectedInvoice.Total)</MudText>
+                <MudText>@L["AmountDue"]: @Lang.FormatCurrency(_selectedInvoice.AmountDue)</MudText>
+                <MudNumericField @bind-Value="_paymentAmount" Label="@L["AmountPaid"]"
+                    Min="0" Max="@_selectedInvoice.Total" Variant="Variant.Outlined" />
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="ClosePaymentDialog" Color="Color.Default" Disabled="@_isProcessing">@L["Cancel"]</MudButton>
+        <MudButton OnClick="RecordPayment" Color="Color.Primary" Variant="Variant.Filled" Disabled="@_isProcessing">
+            @if (_isProcessing)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject] private IInvoiceService InvoiceService { get; set; } = default!;
+    [Inject] private IOrderService OrderService { get; set; } = default!;
+    [Inject] private ILanguageService Lang { get; set; } = default!;
+    [Inject] private ILocalizationService L { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
+    private IReadOnlyList<InvoiceResponse> _invoices = new List<InvoiceResponse>();
+    private bool _isLoading = true;
+    private string _searchString = string.Empty;
+    private bool _showDetailsModal;
+    private bool _showPaymentDialog;
+    private InvoiceResponse? _selectedInvoice;
+    private OrderResponse? _selectedOrder;
+    private decimal _paymentAmount;
+    private DialogOptions _detailsDialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Medium };
+    private DialogOptions _paymentDialogOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Small };
+    private bool _isProcessing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Lang.OnLanguageChanged += OnLanguageChanged;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        _invoices = await InvoiceService.GetAllAsync();
+        _isLoading = false;
+    }
+
+    private bool FilterFunc(InvoiceResponse invoice)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+        if (invoice.InvoiceNumber.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (invoice.OrderNumber.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (invoice.CustomerName.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (invoice.PaymentStatus.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task ShowInvoiceDetails(InvoiceResponse invoice)
+    {
+        _selectedInvoice = invoice;
+        _selectedOrder = await OrderService.GetByIdAsync(invoice.OrderId);
+        _showDetailsModal = true;
+    }
+
+    private void CloseDetailsModal()
+    {
+        _showDetailsModal = false;
+        _selectedInvoice = null;
+        _selectedOrder = null;
+    }
+
+    private void OpenPaymentDialog(InvoiceResponse invoice)
+    {
+        _selectedInvoice = invoice;
+        _paymentAmount = invoice.AmountPaid;
+        _showPaymentDialog = true;
+    }
+
+    private void ClosePaymentDialog()
+    {
+        _showPaymentDialog = false;
+        _selectedInvoice = null;
+        _paymentAmount = 0;
+    }
+
+    private async Task RecordPayment()
+    {
+        if (_selectedInvoice == null || _isProcessing) return;
+
+        _isProcessing = true;
+        try
+        {
+            var result = await InvoiceService.UpdatePaymentAsync(_selectedInvoice.Id, new UpdateInvoicePaymentRequest(_paymentAmount));
+            if (result != null)
+            {
+                Snackbar.Add(L["PaymentRecorded"], Severity.Success);
+                ClosePaymentDialog();
+                await LoadData();
+            }
+            else
+            {
+                Snackbar.Add(L["Error"], Severity.Error);
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task MarkAsPaid(Guid invoiceId)
+    {
+        if (_isProcessing) return;
+
+        _isProcessing = true;
+        try
+        {
+            var result = await InvoiceService.MarkAsPaidAsync(invoiceId);
+            if (result != null)
+            {
+                Snackbar.Add(L["InvoiceMarkedAsPaid"], Severity.Success);
+                await LoadData();
+            }
+            else
+            {
+                Snackbar.Add(L["Error"], Severity.Error);
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task DeleteInvoice(Guid invoiceId)
+    {
+        if (_isProcessing) return;
+
+        _isProcessing = true;
+        try
+        {
+            var result = await InvoiceService.DeleteAsync(invoiceId);
+            if (result)
+            {
+                Snackbar.Add(L["InvoiceDeleted"], Severity.Success);
+                await LoadData();
+            }
+            else
+            {
+                Snackbar.Add(L["Error"], Severity.Error);
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private Color GetPaymentStatusColor(string status) => status switch
+    {
+        "Paid" => Color.Success,
+        "PartialPaid" => Color.Warning,
+        _ => Color.Error
+    };
+
+    private string GetLocalizedPaymentStatus(string status) => status switch
+    {
+        "NotPaid" => L["NotPaid"],
+        "PartialPaid" => L["PartialPaid"],
+        "Paid" => L["Paid"],
+        _ => status
+    };
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

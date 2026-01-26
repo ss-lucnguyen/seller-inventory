@@ -173,6 +173,10 @@ html, body {
     letter-spacing: 0 !important;
 }
 
+.inv-page .mud-button-root{
+    border: none !important;
+}
+
 .mud-fab {
     border-radius: 12px !important;
 }

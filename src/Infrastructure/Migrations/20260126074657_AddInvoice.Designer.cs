@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SellerInventory.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SellerInventory.Infrastructure.Data;
 namespace SellerInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260126074657_AddInvoice")]
+    partial class AddInvoice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,57 +57,6 @@ namespace SellerInventory.Infrastructure.Migrations
                     b.HasIndex("StoreId");
 
                     b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("SellerInventory.Domain.Entities.Customer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AccountNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Gender")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Mobile")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("StoreId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountNumber")
-                        .IsUnique();
-
-                    b.HasIndex("StoreId");
-
-                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("SellerInventory.Domain.Entities.Invoice", b =>
@@ -185,9 +137,6 @@ namespace SellerInventory.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("uuid");
-
                     b.Property<decimal>("Discount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -229,8 +178,6 @@ namespace SellerInventory.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CustomerId");
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
@@ -521,17 +468,6 @@ namespace SellerInventory.Infrastructure.Migrations
                     b.Navigation("Store");
                 });
 
-            modelBuilder.Entity("SellerInventory.Domain.Entities.Customer", b =>
-                {
-                    b.HasOne("SellerInventory.Domain.Entities.Store", "Store")
-                        .WithMany("Customers")
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Store");
-                });
-
             modelBuilder.Entity("SellerInventory.Domain.Entities.Invoice", b =>
                 {
                     b.HasOne("SellerInventory.Domain.Entities.Order", "Order")
@@ -553,12 +489,6 @@ namespace SellerInventory.Infrastructure.Migrations
 
             modelBuilder.Entity("SellerInventory.Domain.Entities.Order", b =>
                 {
-                    b.HasOne("SellerInventory.Domain.Entities.Customer", "Customer")
-                        .WithMany("Orders")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("SellerInventory.Domain.Entities.Store", "Store")
                         .WithMany("Orders")
                         .HasForeignKey("StoreId")
@@ -570,8 +500,6 @@ namespace SellerInventory.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Customer");
 
                     b.Navigation("Store");
 
@@ -650,11 +578,6 @@ namespace SellerInventory.Infrastructure.Migrations
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SellerInventory.Domain.Entities.Customer", b =>
-                {
-                    b.Navigation("Orders");
-                });
-
             modelBuilder.Entity("SellerInventory.Domain.Entities.Order", b =>
                 {
                     b.Navigation("Invoice");
@@ -670,8 +593,6 @@ namespace SellerInventory.Infrastructure.Migrations
             modelBuilder.Entity("SellerInventory.Domain.Entities.Store", b =>
                 {
                     b.Navigation("Categories");
-
-                    b.Navigation("Customers");
 
                     b.Navigation("Invoices");
 

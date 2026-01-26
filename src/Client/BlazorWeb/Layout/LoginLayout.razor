@@ -1,3 +1,59 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+
+<div style="position: fixed; top: 16px; right: 16px; z-index: 1000;">
+    <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Default" AnchorOrigin="Origin.BottomRight"
+        TransformOrigin="Origin.TopRight" Variant="Variant.Filled">
+        <MudMenuItem OnClick="@(() => SetLanguage(Language.ENG))">
+            <div class="d-flex align-center gap-2">
+                <MudText>🇺🇸</MudText>
+                <MudText>English</MudText>
+                @if (_currentLanguage == Language.ENG)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" />
+                }
+            </div>
+        </MudMenuItem>
+        <MudMenuItem OnClick="@(() => SetLanguage(Language.VIE))">
+            <div class="d-flex align-center gap-2">
+                <MudText>🇻🇳</MudText>
+                <MudText>Tiếng Việt</MudText>
+                @if (_currentLanguage == Language.VIE)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" />
+                }
+            </div>
+        </MudMenuItem>
+    </MudMenu>
+</div>
 
 @Body
+
+@code {
+    [Inject] private ILanguageService LanguageService { get; set; } = default!;
+
+    private Language _currentLanguage = Language.ENG;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LanguageService.InitializeAsync();
+        _currentLanguage = LanguageService.CurrentLanguage;
+        LanguageService.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private async Task SetLanguage(Language language)
+    {
+        await LanguageService.SetLanguageAsync(language);
+    }
+
+    private void OnLanguageChanged()
+    {
+        _currentLanguage = LanguageService.CurrentLanguage;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LanguageService.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

@@ -59,6 +59,7 @@ public class LanguageService : ILanguageService
             {
                 _currentLanguage = language;
                 _currentCulture = CultureMap[language];
+                OnLanguageChanged?.Invoke();
             }
         }
         catch

@@ -10,6 +10,13 @@
     <MudNavLink Href="orders" Icon="@Icons.Material.Filled.Receipt">
         @GetText("Orders")
     </MudNavLink>
+    <AuthorizeView Roles="Manager,SystemAdmin">
+        <Authorized>
+            <MudNavLink Href="invoices" Icon="@Icons.Material.Filled.Description">
+                @GetText("Invoices")
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
     <MudNavLink Href="reports" Icon="@Icons.Material.Filled.Assessment">
         @GetText("Reports")
     </MudNavLink>
@@ -20,6 +27,9 @@
             </MudNavLink>
             <MudNavLink Href="categories" Icon="@Icons.Material.Filled.Category">
                 @GetText("Categories")
+            </MudNavLink>
+            <MudNavLink Href="customers" Icon="@Icons.Material.Filled.PersonAdd">
+                @GetText("Customers")
             </MudNavLink>
             <MudNavLink Href="users" Icon="@Icons.Material.Filled.People">
                 @GetText("Users")

@@ -1,9 +1,11 @@
 @page "/register-store"
 @layout LoginLayout
+@implements IDisposable
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject ILocalizationService L
+@inject ILanguageService LanguageService
 
 <PageTitle>@L["RegisterStore"] - SellerInventory</PageTitle>
 
@@ -97,6 +99,21 @@
     private string _confirmPassword = string.Empty;
     private bool _isLoading;
     private bool _showPassword;
+
+    protected override void OnInitialized()
+    {
+        LanguageService.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LanguageService.OnLanguageChanged -= OnLanguageChanged;
+    }
 
     private async Task HandleRegister()
     {
